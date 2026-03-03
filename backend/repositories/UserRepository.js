@@ -1,82 +1,18 @@
-const fs = require('fs');
-const unzipper = require('unzipper');
-const os = require('os');
-const path = require('path');
-const { exec } = require('child_process');
 
-class UserRepository {
 
-    static performScan(repoUrl) {
-        return new Promise((resolve, reject) => {
 
-            const tmpDir = path.join(os.tmpdir(), Date.now().toString());
-
-            exec(`git clone ${repoUrl} ${tmpDir}`, (err) => {
-                if (err) return reject(new Error(`Erreur lors du clonage du dépôt: ${err.message}`));
-
-                exec(`semgrep --config=p/owasp-top10 ${tmpDir} --json`, (err, semgrepOut) => {
-                    if (err) return reject(new Error(`Erreur lors de l'exécution de Semgrep: ${err.message}`));
-
-                    const semgrepResults = JSON.parse(semgrepOut);
-
-                    exec(`eslint --extensions .js ${tmpDir} -f json`, (err, eslintOut) => {
-                        if (err) eslintOut = '[]'; 
-
-                        const eslintResults = JSON.parse(eslintOut || '[]');
-
-                        exec(`cd ${tmpDir} && npm audit --json`, (err, auditOut) => {
-                            if (err) auditOut = '{}';
-
-                            const auditResults = JSON.parse(auditOut || '{}');
-
-                            resolve({
-                                semgrep: semgrepResults,
-                                eslint: eslintResults,
-                                npmAudit: auditResults
-                            });
-                        });
-                    });
-                });
-
-            });
-        });
-
-}
-
-    static performZipScan(zipPath) {
-        return new Promise((resolve, reject) => {
-            const tmpDir = path.join(os.tmpdir(), Date.now().toString());
-
-            fs.createReadStream(zipPath)
-                .pipe(unzipper.Extract({ path: tmpDir }))
-                .on('close', () => {
-                    exec(`semgrep --config=p/owasp-top10 ${tmpDir} --json`, (err, semgrepOut) => {
-                        if (err) return reject(new Error(`Erreur lors de l'exécution de Semgrep: ${err.message}`));
-
-                        const semgrepResults = JSON.parse(semgrepOut);
-
-                        exec(`eslint --extensions .js ${tmpDir} -f json`, (err, eslintOut) => {
-                            if (err) eslintOut = '[]';
-
-                            const eslintResults = JSON.parse(eslintOut || '[]');
-
-                            exec(`cd ${tmpDir} && npm audit --json`, (err, auditOut) => {
-                                if (err) auditOut = '{}';
-
-                                const auditResults = JSON.parse(auditOut || '{}');
-
-                                resolve({
-                                    semgrep: semgrepResults,
-                                    eslint: eslintResults,
-                                    npmAudit: auditResults
-                                });
-                            });
-                        });
-                    });
-                })
-                .on('error', reject);
-        });
+class UserRepository
+{
+    /**
+     * Records a scan for a user.
+     * @param {string} userId - The ID of the user.
+     * @param {object} scanData - The data related to the scan.
+     * @param {string} scanData.rule_id - The ID of the rule that was triggered.
+     * @param {int} scanData.score - the score associated with the scan.
+     * @param {string} scanData.file_path -the relative path of the file that was scanned.
+     * @param {string} scanData.pattern_type - the type of pattern that was matched (e.g., "regex", "keyword").
+     */
+    recordScan(userId, scanData ){
+        
     }
 }
-
-module.exports = UserRepository;

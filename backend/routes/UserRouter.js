@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const UserController = require('../controllers/UserController');
+const CodeScanner = require('../controllers/UserController');
 const { checkUserAuthorization } = require('../middlewares/checkUserAuthorization');
 
 const upload = multer({ dest: 'uploads/' });
