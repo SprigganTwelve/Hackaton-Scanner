@@ -1,6 +1,8 @@
 // src/pages/NewScan/NewScanPage
 import { useMemo, useRef, useState } from "react";
 import "./NewScanPage.css";
+import { createScan } from "../../services/scans.services";
+import { useNavigate } from "react-router-dom";
 
 const PROVIDERS = [
   { value: "github", label: "GitHub" },
@@ -90,7 +92,10 @@ export default function NewScanPage() {
       tools: Array.from(enabledTools),
     };
 
-    console.log("LAUNCH SCAN (mock):", payload);
+    const navigate = useNavigate();
+
+	const result = await createScan(payload);
+	navigate(`/scans/${result.id}`);
 
     // Simule une “détection automatique” (juste pour le front)
     setAutoDetected((prev) => ({

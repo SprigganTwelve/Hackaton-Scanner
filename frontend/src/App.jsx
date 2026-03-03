@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import NewScanPage from "./pages/NewScan/NewScanPage";
 import FindingsPage from "./pages/Findings/Findings";
 import ScanDashboard from "./pages/scan/ScanDashboard";
+import ReportsPage from "./pages/Reports/ReportsPage"
 import AppLayout from "./layouts/appLayout";
 
 const router = createBrowserRouter([
@@ -17,9 +18,9 @@ const router = createBrowserRouter([
 
       { path: "scans/:scanId/findings", element: <FindingsPage /> },
 
+	  { path: "scans/:scanId/reports", element: <ReportsPage /> },
       // à ajouter plus tard :
       // { path: "scans/:scanId/fixes", element: <FixesPage /> },
-      // { path: "scans/:scanId/reports", element: <ReportsPage /> },
     ],
   },
 ]);
