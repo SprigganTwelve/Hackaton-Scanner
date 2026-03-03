@@ -1,5 +1,11 @@
 
 
+const jwt = require('jsonwebtoken')
+
+//Services
+const getJwtSecret = require('../config/jwtSecret')
+const BlacklistedTokenRepository = require('../repositories/BlacklistedTokenRepository')
+
 /**
  * Middleware that validates whether the authenticated user
  * has the required permission to perform the requested action.
@@ -12,5 +18,31 @@
  * @returns {Promise<void>}
  */
 exports.checkUserAuthorization = async(req, res, next)=>{
+    try {
+        //Data Validation
+        const token  = req.header.authorization?.replace('Bearer ', "")
+        if(!token)
+            return res.json({message: 'Permission non autorisé, veuillez redemarrer votre session de connexion en vous reconnectant'})
 
+        //Tokne Validation
+        const isTokenNotBlacklisted = await BlacklistedTokenRepository.isTokenBlacklisted({ token })
+        
+        if(isTokenNotBlacklisted)
+        {
+            return res.json({
+                    message: 'Permission non autorisé, veuillez redemarrer votre session de connexion en vous reconnectant'
+            }).status(401)
+        }
+        
+        const decoded = jwt.verify(token, getJwtSecret())
+
+        //Token decoding & get to next step
+        req.user = decoded
+        return next()
+    }
+    catch (error)
+    {
+        console.log("Something went wrong")
+        return res.json({message: 'Une erreur inattendue est survenue lors de la vérification de l\'accès'})
+    }
 }
