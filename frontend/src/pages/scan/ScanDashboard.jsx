@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getScanSummary, listFindings } from "../../services/scans.services";
+import { useNavigate } from "react-router-dom";
 import "./ScanDashboard.css";
 
 import {
@@ -266,6 +267,7 @@ export default function ScanDashboard() {
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!scanId) return;
@@ -296,7 +298,7 @@ export default function ScanDashboard() {
       <div className="ds-topbar">
         <div className="ds-topbar__title">Dashboard</div>
         <div className="ds-topbar__actions">
-          <button className="ds-topBtn ds-topBtn--primary" type="button">Nouveau Scan +</button>
+          <button className="ds-topBtn ds-topBtn--primary" type="button" onClick={() => navigate("/new-scan")}>Nouveau Scan +</button>
           <button className="ds-topBtn" type="button">Générer rapport</button>
         </div>
       </div>
