@@ -47,9 +47,12 @@ CREATE TABLE report(
 -- Finding - description about an existing error
 CREATE TABLE finding(
    id INT AUTO_INCREMENT PRIMARY KEY,
+   rule_id VARCHAR(250) NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
    score DECIMAL(15,2) NOT NULL,
-   filename VARCHAR(250) NOT NULL,
+   pattern_type VARCHAR(250) NOT NULL,       -- represents the type of the error (ex: hardcoded password, secret key, etc.)
+   file_path VARCHAR(250) NOT NULL,          -- represents the path of the file where the error is located
    analysis_record_id INT NOT NULL,
+   code TEXT NOT NULL,                         -- represents the code snippet where the error is located
    FOREIGN KEY(analysis_record_id) REFERENCES analysis_record(id)
 );
 
