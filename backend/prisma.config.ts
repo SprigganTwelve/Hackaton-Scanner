@@ -5,10 +5,9 @@
 const envFileConfig = {
   path: '.env'
 }
-
 require('dotenv').config(envFileConfig);
 
-import { defineConfig } from "prisma/config";
+const { defineConfig } = require('prisma/config')
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
