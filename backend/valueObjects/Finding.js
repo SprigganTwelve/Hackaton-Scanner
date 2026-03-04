@@ -5,14 +5,12 @@ class Finding {
     /**
      * Represents a security finding detected in a scanned file.
      * @param {Object} params - The parameters for creating a Finding instance.
-     * @param {string} params.message - The type of pattern that was matched (e.g., "regex", "keyword").
      * @param {string} params.file_path - The relative path of the file that was scanned.
      * @param {string} params.severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
      * @param {string} params.code - The code snippet where the finding was detected.
      * @param {string} params.owaspVulnerabilityError - The OWASP vulnerability category associated with this finding (e.g., "A01_Broken_Access_Control").
      * */
     constructor({ 
-        message,
         file_path,
         severity,
         code,
@@ -30,6 +28,10 @@ class Finding {
             owaspVulnerabilityError
         );
         this.code = code;
+        this.tool_id = tool_id;
+        this.rule_id = rule_id;
+        this.analysis_record_id = analysis_record_id
+        this.fingerprint = fingerprint
         this.owaspVulnerabilityError = owaspVulnerabilityError
     }
 
@@ -37,17 +39,44 @@ class Finding {
      * This function helps to map the severity of a finding 
      * based on its category and the original severity
      * provided by the code scanner. 
-     * @param {string} severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
-     * @returns {string}
+     * @param  { string| number} severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
+     * @param  { string? } owaspVulnerabilityError - indicates the owasp error
+     * @returns {string } 
      */
-    static mapSeverity(severity, owaspVulnerabilityError){
-        switch(severity){
+    static mapSeverity(severity, owaspVulnerabilityError ){
+        if (!isNaN(severity)) {
+            // 2 -> HIGH, 1 -> MEDIUM, 0 -> LOW
+            return severity === 2
+                ? CodeSeverity.HIGH
+                : severity === 1
+                ? CodeSeverity.MEDIUM
+                : CodeSeverity.LOW;
+        }
+
+        switch(severity.toUpperCase()){
             case 'INFO':
                 return CodeSeverity.LOW;
+            case 'LOW':
+                return CodeSeverity.LOW;
+
             case 'WARNING':
                 return CodeSeverity.MEDIUM;
+            case 'MODERATE':
+                return CodeSeverity.MEDIUM;
+                
+            case 'HIGH':
+                return CodeSeverity.HIGH;            
+            case 'CRITICAL':
+                return CodeSeverity.CRITICAL;
+                
             case 'ERROR':
-                if(owaspVulnerabilityError === OWASPVulnerabilityError.A01_Broken_Access_Control || owaspVulnerabilityError === OWASPVulnerabilityError.A07_Auth_Failures)
+                if(
+                    owaspVulnerabilityError && 
+                    (
+                        owaspVulnerabilityError === OWASPVulnerabilityError.A01_Broken_Access_Control || 
+                        owaspVulnerabilityError === OWASPVulnerabilityError.A07_Auth_Failures
+                    )
+                )
                     return CodeSeverity.CRITICAL;
                 return CodeSeverity.HIGH;
             default: 

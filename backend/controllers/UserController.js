@@ -11,7 +11,6 @@ const ZipProcessor = require('../services/ZipProcessor')
 const DataBaseTransactionManager = require('../repositories/DataBaseTransactionManager');
 const UserRepository = require('../repositories/UserRepository')
 const ProjectRepository = require('../repositories/ProjectRepository');
-const AnalysisRecordRepository = require('../repositories/AnalysisRecordRepository')
 
 //Enums
 const CodeScannerTool = require('../enums/CodeScannerTool');
@@ -179,10 +178,6 @@ exports.scanRepo = async (req, res) => {
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                await AnalysisRecordRepository.addAnalysisRecord({ 
-                    project_id: projectId,
-                    score: scanResult.securityScore
-                });
                 RecordScanHelper.execute(scanResult)
                 commit()
             }
@@ -256,10 +251,6 @@ exports.scanZip = async (req, res) => {
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                await AnalysisRecordRepository.addAnalysisRecord({ 
-                    project_id: project?.id,
-                    score: scanResult.securityScore
-                });
                 RecordScanHelper.execute(scanResult)
                 commit()
             }
