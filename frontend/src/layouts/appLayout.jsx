@@ -9,7 +9,7 @@ export default function AppLayout() {
 
         <nav className="sidebar__nav">
           <NavLink className="sidebar__link" to="/scans/1">Dashboard</NavLink>
-		  <NavLink className="sidebar__link" to="/new-scan">Nouveau scan</NavLink>
+		      <NavLink className="sidebar__link" to="/new-scan">Nouveau scan</NavLink>
           <NavLink className="sidebar__link" to="/scans/1/findings">Findings</NavLink>
           <NavLink className="sidebar__link" to="/scans/1/fixes">Corrections</NavLink>
           <NavLink className="sidebar__link" to="/scans/1/reports">Rapport</NavLink>

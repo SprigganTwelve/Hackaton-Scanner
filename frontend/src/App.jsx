@@ -5,7 +5,20 @@ import ScanDashboard from "./pages/scan/ScanDashboard";
 import ReportsPage from "./pages/Reports/ReportsPage"
 import AppLayout from "./layouts/appLayout";
 
+//-------------------Ajouté pour Login et Register -----------------
+
+import LoginPage from "./pages/Login/Login";
+import RegisterPage from "./pages/Register/Register";
+
+//------------------------------------------------------------------
+
 const router = createBrowserRouter([
+
+  //------------------------------------------------------------------------------------
+  { path: "/login", element: <LoginPage /> },         //Ajouté pour Login et Register
+  { path: "/register", element: <RegisterPage /> },   //Ajouté pour Login et Register
+  //------------------------------------------------------------------------------------
+
   {
     path: "/",
     element: <AppLayout />,
