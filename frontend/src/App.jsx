@@ -13,6 +13,13 @@ import RegisterPage from "./pages/Register/Register";
 
 //------------------------------------------------------------------
 
+//-------------------Ajouté pour Login et Register -----------------
+
+import LoginPage from "./pages/Login/Login";
+import RegisterPage from "./pages/Register/Register";
+
+//------------------------------------------------------------------
+
 const router = createBrowserRouter([
 
   //------------------------------------------------------------------------------------
