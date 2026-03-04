@@ -48,7 +48,11 @@ class BlacklistedTokenRepository {
     static async deleteMany({ userId }) {
         await pool.query(
             `DELETE FROM blacklisted_token 
+<<<<<<< HEAD
              WHERE user_id = ? AND expired_at < ?`,
+=======
+             WHERE account_id = ? AND revoked_at < ?`,
+>>>>>>> 5c190b9 (fixe bug and add routes to login and register)
             [userId, new Date()]
         );
     }

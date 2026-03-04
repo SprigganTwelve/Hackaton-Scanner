@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { register } from "../services/auth.services";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import "../App.css";
 import "../pages/Register/Register.css";
@@ -16,25 +17,38 @@ export default function RegisterForm() {
   const [message, setMessage] = useState("");
 
   const handleRegister = async (e) => {
-    e.preventDefault();
+	e.preventDefault();
+	setMessage("");
 
-    if (password !== confirmPassword) {
-      setMessage("Les mots de passe ne correspondent pas !");
-      return;
-    }
+	if (password !== confirmPassword) {
+		setMessage("Les mots de passe ne correspondent pas !");
+		return;
+	}
 
-    const res = await register({ name, email, password, github });
+	try {
+		const result = await register({
+		name,
+		email,
+		password,
+		git_url: github,
+		git_access_token: "",
+		});
 
-    if (res.success) {
-      setMessage("Compte créé avec succès !");
-      setTimeout(() => {
-      navigate("/new-scan");
-      }, 1000);
-    } else {
-      setMessage(res.message);
-    }
-  };
+		console.log("REGISTER RESULT =", result);
 
+		if (result?.user) {
+		// petit message optionnel
+		// setMessage(result.message || "Compte créé !");
+		navigate("/login", { replace: true });
+		return;
+		}
+
+		setMessage(result?.message || "Inscription impossible");
+	} catch (err) {
+		console.error(err);
+		setMessage("Inscription impossible (erreur réseau/serveur)");
+	}
+	};
   return (
     <div className="register">
       <div className="register__card">
@@ -111,7 +125,7 @@ export default function RegisterForm() {
         {message && <p className="register__footer">{message}</p>}
 
         <p className="register__footer">
-          Vous avez déjà un espace ? <a href="/login">Se connecter</a>
+          Vous avez déjà un espace ? <Link to="/login">Se connecter</Link>
         </p>
       </div>
     </div>

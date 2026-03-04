@@ -13,13 +13,11 @@ export default function LoginForm() {
     e.preventDefault();
 
     try {
-      const result = await login({ email, password });
+      const result = await login(email, password);
 
-      if (result.success) {
-        navigate("/new-scan");
-      } else {
-        alert(result.message || "Email ou mot de passe invalide");
-      }
+      const ok = result?.success === true || !!result?.token;
+	if (ok) navigate("/new-scan");
+	else alert(result?.message || "Email ou mot de passe invalide");
 
     } catch (err) {
       console.error("Login failed:", err);

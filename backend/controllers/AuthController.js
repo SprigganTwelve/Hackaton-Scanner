@@ -24,7 +24,11 @@ exports.login = async (req, res) => {
             return res.json({sucess: false,message: "S'il vous plaît, verifiez les chanps & données de la requête"})
         
         //Password Validation
+<<<<<<< HEAD
         const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email: email.trim() })
+=======
+        const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email })
+>>>>>>> 5c190b9 (fixe bug and add routes to login and register)
         const isPasswordOkay = await PasswordHasher.compare(password, hashedPassword)
 
         if(!isPasswordOkay)
@@ -95,6 +99,7 @@ exports.register = async (req, res)=>{
         const user = await AuthRepository.save({
             name, 
             email,
+<<<<<<< HEAD
             password: PasswordHasher.hash(password),
             git_url,
             git_access_token: git_access_token || null
@@ -104,14 +109,28 @@ exports.register = async (req, res)=>{
             success: true,
             message: "Opération exécuté avec succès"
         }).status(200)
+=======
+            password: await PasswordHasher.hash(password),
+            git_url,
+            hash_git_access_token: git_access_token ? await PasswordHasher.hash(git_access_token) : null
+        })
+        return res.status(200).json({
+			user,
+			message: "Opération exécutée avec succès",
+		});
+>>>>>>> 5c190b9 (fixe bug and add routes to login and register)
     }
     catch(error)
     {
         console.log("Something went wrong !! ", error)
+<<<<<<< HEAD
         return res.json({
             success: false,
             message: "Une erreur est survenue, Veuillez reéssayer"
         }).status(400)
+=======
+        return res.status(500).json({ message: "Une erreur est survenue, veuillez réessayer" });
+>>>>>>> 5c190b9 (fixe bug and add routes to login and register)
     }
 }
 

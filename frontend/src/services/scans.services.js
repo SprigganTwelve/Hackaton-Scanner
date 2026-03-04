@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "./API";
 import * as mock from "./scans.mock";
 
 console.log("VITE_USE_MOCKS =", import.meta.env.VITE_USE_MOCKS);

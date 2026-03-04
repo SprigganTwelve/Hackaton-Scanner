@@ -17,7 +17,6 @@ const ReportController = require('../controllers/ReportController');
 const storage = multer.memoryStorage()
 const upload = multer({ storage});
 
-
 router.post('/add-project/url', checkUserAuthorization, UserController.addProjectWithURL);
 router.post('/add-project/zip', checkUserAuthorization, upload.single('file'), UserController.addProjectWithZip);
 

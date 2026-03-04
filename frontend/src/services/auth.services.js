@@ -8,10 +8,18 @@ export async function login(email, password) {
   return data;
 }
 
-export async function register(email, password) {
-  const data = await api.post("/api/auth/register", { email, password });
-  // backend renvoie { token, message }
+export async function register({ name, email, password, git_url, git_access_token }) {
+  const data = await api.post("/api/auth/register", {
+    name,
+    email,
+    password,
+    git_url,
+    git_access_token,
+  });
+
+  // optionnel: si backend renvoie un token à l’inscription
   if (data?.token) localStorage.setItem("token", data.token);
+
   return data;
 }
 
