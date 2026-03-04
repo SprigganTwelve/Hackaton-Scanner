@@ -34,7 +34,7 @@ exports.login = async (req, res) => {
         await BlacklistedTokenRepository.deleteMany({ userId })
 
         //JWT-Security validation
-        const playload = AuthJwtPayload({sub: userId, issue_at: Date.now()})
+        const playload = AuthJwtPayload({sub: userId})
 
         const token = jwt.sign(
             playload, 
@@ -79,12 +79,12 @@ exports.register = async (req, res)=>{
         } = req.body;
 
         if(!email || !password)
-            return res.json({message: "Le champ email ou password est manquant"}).status(400)
+            return res.json({message: "Les champs email et password sont requis"}).status(400)
 
-        if(git_url.trim() && !git_url.startWith('https://github.com/'))
+        if(git_url.trim() && !git_url.startsWith('https://github.com/'))
         {
             return res.json({
-                message: 'S\'il vous plaît, veuillez saisir une url git valide'
+                message: 'S\'il vous plaît, veuillez saisir une url github valide'
             })
         }
 
@@ -95,7 +95,8 @@ exports.register = async (req, res)=>{
             git_url,
             hash_git_access_token: hash_git_access_token || null
         })
-        return res.json({ 
+        return res.json({
+            user,
             message: "Opération exécuté avec succès"
         }).status(200)
     }
@@ -112,7 +113,7 @@ exports.logout = async (req, res)=>{
         //Data Validation
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith("Bearer ")) {
-        return res.status(401).json({ message: "Token manquant ou mal formé" });
+            return res.status(401).json({ message: "Token manquant ou mal formé" });
         }
 
         const token = authHeader.replace("Bearer ", "");

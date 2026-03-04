@@ -1,6 +1,7 @@
 
 class AuthJwtPayload {
-    constructor(sub) {
+    constructor({userId}) {
         this.sub = userId;
+        this.iat = new Date();
     }
 }

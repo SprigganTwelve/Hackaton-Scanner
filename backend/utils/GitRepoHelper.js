@@ -40,6 +40,8 @@ class GitRepoHelper {
             return false; //the repository is private and we don't have access to it
         }
         
+        return false; //the repository doesn't exist
+        
     }
 
 }

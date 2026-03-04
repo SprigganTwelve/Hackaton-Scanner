@@ -7,7 +7,7 @@ class CodeScannerTool {
     /**
      * @param {string[]} tools - An array of tool names to check for existence.
      */
-    isValidTool(tool) {
+    static isValidTool(tool) {
         return [
             CodeScannerTool.SEMGREP,
             CodeScannerTool.NPM_AUDIT,
@@ -15,3 +15,5 @@ class CodeScannerTool {
         ].includes(tool);
     }
 }
+
+module.exports = CodeScannerTool

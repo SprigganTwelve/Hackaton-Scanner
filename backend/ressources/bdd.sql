@@ -6,8 +6,8 @@ USE secure_scann;
 
 -- Define or represent an user inside the system
 CREATE TABLE account(
-   id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250),
+   id  VARCHAR(250) PRIMARY KEY,
+   name VARCHAR(250),         
    email VARCHAR(250) UNIQUE NOT NULL,
    password VARCHAR(255) NOT NULL,
    git_url VARCHAR(350),
@@ -17,12 +17,12 @@ CREATE TABLE account(
 -- Represent a project upload by an user
 CREATE TABLE project(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL,
+   name VARCHAR(250) NOT NULL,         -- can represent the name of the cloned repository or an original name of the uploaded zip file
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    url VARCHAR(250) NOT NULL,  -- represents the url of the project (ex: git repository url)
-   is_zip TINYINT(1) NOT NULL DEFAULT FALSE, -- indicates if the project was uploaded as a zip file or not
+   is_uploaded TINYINT(1) NOT NULL DEFAULT 0, -- indicates if the project was uploaded as a zip file or not
 
-   account_id INT NOT NULL,
+   account_id VARCHAR(250) NOT NULL,
    FOREIGN KEY(account_id) REFERENCES account(id)
 );
 
@@ -122,7 +122,7 @@ CREATE TABLE finding(
 CREATE TABLE line_info(
    id INT AUTO_INCREMENT PRIMARY KEY,
    start_index INT NOT NULL,
-   end_index INT NOT NULL,
+   end_index INT DEFAULT NULL,
    finding_id INT NOT NULL,
    FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
 );
@@ -144,7 +144,7 @@ CREATE TABLE blacklisted_token(
    epired_at DATETIME,
    issue_at DATETIME,
 
-   account_id INT ,
+   account_id VARCHAR(250) ,
    FOREIGN KEY(account_id) REFERENCES account(id) ON DELETE CASCADE
 );
 

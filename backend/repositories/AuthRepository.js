@@ -1,6 +1,10 @@
+const { v4: uuidv4 } = require('uuid');
 const pool = require('../config/database/mysql.client');
+
+// excexption classes
 const RessourceNotFound = require('../core/errors/NotFoundRessource');
 
+//repository
 class AuthRepository {
 
     /**
@@ -40,9 +44,9 @@ class AuthRepository {
         hash_git_access_token, name 
     }) {
         const [result] = await pool.query(
-            `INSERT INTO account (email, password, name, git_url, hash_git_access_token)
-             VALUES (?, ?, ?, ?, ?)`,
-            [email, password, name, git_url, hash_git_access_token]
+            `INSERT INTO account (id, email, password, name, git_url, hash_git_access_token)
+             VALUES (?,?, ?, ?, ?, ?)`,
+            [ uuidv4(), email, password, name, git_url, hash_git_access_token ]
         );
 
         // result.insertId contient l'ID généré par MySQL

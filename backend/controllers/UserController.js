@@ -1,9 +1,23 @@
+const path = require('path');
+const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 
 //Locla Services
-const AuthPlayload = require('../utils/AuthJwtPayload')
 const CodeScanner = require('../services/CodeScanner');
+const ZipProcessor = require('../services/ZipProcessor')
+
+//Repositories
+const DataBaseTransactionManager = require('../repositories/DataBaseTransactionManager');
 const UserRepository = require('../repositories/UserRepository')
+const ProjectRepository = require('../repositories/ProjectRepository');
+
+//Enums
+const CodeScannerTool = require('../enums/CodeScannerTool');
+
+//Helpers/Utility
 const GitRepoHelper = require('../utils/GitRepoHelper')
+
+
+const AuthPlayload = require('../utils/AuthJwtPayload');
 
 /**
  * Help an user add a project to his account with git_url
@@ -12,6 +26,7 @@ const GitRepoHelper = require('../utils/GitRepoHelper')
  * @returns 
  */
 exports.addProjectWithURL = async (req, res) => {
+    //Data validation
     const { name, repoUrl, scannTools, token } = req.body;
 
     /** @var {AuthPlayload} authPayload */
@@ -27,12 +42,92 @@ exports.addProjectWithURL = async (req, res) => {
         });
     }
 
-    const doesRepoExixt = await GitRepoHelper.repoExists(repoUrl,  )
+    //Check repository existance
+    const doesRepoExixt = await GitRepoHelper.repoExists(repoUrl, authPayload.sub, token)
+    if(!doesRepoExixt)
+        return res.status(400).json({
+            success: false, 
+            message: 'Le dépôt GitHub spécifié n\'existe pas ou est inaccessible'
+        })
+    
+    try {
+        //Save the project in the database
+        await UserRepository.addProject(authPayload.sub, {name, url: repoUrl})
+        return res.status(200).json({ ducess: true, message: 'Projet ajouté avec succès'})
+    }
+    catch (error) {
+        //Log the error & return a messg to the client
+        console.log('Erreur lors de l\'ajout du projet :', error);
+        return res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout du projet' });
+    }
+}
 
+
+/**
+ * Allow an user to add a project with a zip file
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+exports.addProjectWithZip = async (req, res) => {   
+    try{
+        //Data validation
+        const file = req.file;
+        /** @var {AuthPlayload} authPayload */
+        const authPayload = req.user;
+        if(!file)
+        {
+            console.log('Missing Zip File')
+            return res.status(400).json({ success: false, message: 'Zip File manquant'})
+        }
+
+        const zipFileName = Date.now() + '_' + file.originalname.replace(/\s+/g, '_');  //the name of the file in a unique format to avoid any conflicts
+        const destPath = path.join(BASIC_UPLOADING_FOLDER_PATH, `${authPayload.sub}/${zipFileName}`); //final folder destination where the file will be unzipped
+
+        //Save the project in the database & decompress the zip file in the same time, 
+        // if any error occurs we will rollback the transaction and delete any decompressed files if needed
+        DataBaseTransactionManager.executeTransaction(async({commit, rollback})=>{
+            try{
+                await ProjectRepository.addProject(authPayload.sub, {
+                    name: zipFileName,
+                    url: destPath,
+                    is_uploaded: true
+                })
+                await ZipProcessor.decompressZipToFolder(file.buffer, destPath)
+                await commit();
+                return res.status(200).json({ 
+                    success: true,
+                    message: 'Projet ajouté avec succès'
+                })
+            }
+            catch(error)
+            {
+                console.log('Error while processing the zip file : ', error)
+                await rollback();
+                return res.status(500).json({ 
+                    success: false,
+                    message: 'Une erreur est survenue lors du traitement du fichier ZIP'
+                })
+            }
+        })
+    }
+    catch (error) {
+        console.log('Something went wrong !! ', error)
+        return res.status(500).json({ 
+            success: false,
+            message: 'Une erreur est survenue lors de l\'ajout du projet'
+        })
+    }
 }
 
 
 
+/**
+ * Allow an user to scan a project with the selected scanning tools
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
 exports.scanRepo = async (req, res) => {
 
     const { repoUrl, scannTools } = req.body;
@@ -44,6 +139,14 @@ exports.scanRepo = async (req, res) => {
         return res.status(400).json({ 
             success: false,
             message: 'scannTools ne doit pas être vide'
+        });
+    }
+
+    //Check that only valid scanning tools are provided
+    if(!scannTools.every(tool => CodeScannerTool.isValidTool(tool))){
+        return res.status(400).json({ 
+            success: false,
+            message: 'scannTools contient des outils de scan invalides. Les outils valides sont : semgrep, eslint, npmAudit'
         });
     }
 

@@ -42,7 +42,8 @@ class CodeScanner {
                 })
             }
 
-            if(scannTools.includes('eslint')){
+            if(scannTools.includes('eslint'))
+            {
                 exec(`eslint --extensions .js ${tmpDir} -f json`, (err, eslintOut) => {
                     if (err) 
                         eslintOut = '[]'; 
@@ -50,7 +51,8 @@ class CodeScanner {
                 })
             }
 
-            if(scannTools.includes('npmAudit')){
+            if(scannTools.includes('npmAudit'))
+            {
                 exec(`cd ${tmpDir} && npm audit --json`, (err, auditOut) => {
                     if (err) auditOut = '{}';
                     auditResults = JSON.parse(auditOut || '{}');
@@ -195,4 +197,4 @@ class CodeScanner {
 
 
 
-module.exports = UserRepository;
+module.exports = CodeScanner;
