@@ -1,6 +1,6 @@
 
 const UserRepository = require('../repositories/UserRepository');
-const { generateReport } = require('../services/ReportService');
+const { generateReport } = require('../services/ReportGenerator');
 
 exports.generateUserReport = async (req, res) => {
     try {

@@ -1,15 +1,34 @@
 
-const pool = require('../config/database');
+const pool = require('../config/database/mysql.client');
+
+
 const UserProfile = require('./DTO/User.profile');
 const UserProject = require('./DTO/User.project');
 const AnalysisFinding = require('./DTO/AnalysisFinding');
 const AnalysisReport = require('./DTO/AnalysisReport');
 
+const CryptoSecurityService = require('../services/CryptoSecurityService')
 /**
  * Repository for user-related database operations, such as saving scan results and retrieving user access tokens.
  */
 class UserRepository
 {
+
+    /**
+     * @param userId - the unique identifier of an user
+     * @returns { Promise<{ git_access_token: string }> }
+     */
+    async getUserAccessToken(userdId){
+        const [rows] = await pool.query(
+            'SELECT git_access_token FROM account WHERE id =?',
+            [userdId]
+        );
+
+        return { 
+            git_access_token: CryptoSecurityService.decode(rows[0].git_access_token)
+        }
+    }
+
     /**
      * Records a scan for a user.
      * @param {string} userId - The ID of the user.

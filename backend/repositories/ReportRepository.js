@@ -1,4 +1,4 @@
-const pool = require('../config/database')
+const pool = require('../config/database/mysql.client')
 
 class ReportRepository {
 // Créer un rapport

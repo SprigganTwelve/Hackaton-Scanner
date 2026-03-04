@@ -7,11 +7,10 @@ const path = require('path');
 const router = express.Router();
 const multer = require('multer');
 
-const { generateReportController } = require('../controllers/reportController');
+const reportController = require('../controllers/reportController');
+const CorrectionController = require('../controllers/CorrectionController');
 const { checkUserAuthorization } = require('../middlewares/checkUserAuthorization');
 const UserController = require('../controllers/UserController');
-
-
 
 
 
@@ -25,6 +24,12 @@ router.post('/add-project/zip', checkUserAuthorization, upload.single('file'), U
 router.post('/scan', checkUserAuthorization, UserController.scanRepo);
 router.post('/scan-zip', checkUserAuthorization, upload.single('file'), UserController.scanZip);
 
-router.post('/analysis/:analysisId/report', checkUserAuthorization, generateReportController);
+router.post('/analysis/:analysisId/report', checkUserAuthorization, reportController.generateUserReport);
+
+
+router.get('/finding/:findingId/preview', checkUserAuthorization, CorrectionController.previewCorrection);
+router.post('/finding/:findingId/apply', checkUserAuthorization, CorrectionController.applyCorrection);
+router.post('/finding/:findingId/reject', checkUserAuthorization, CorrectionController.rejectCorrection);
+
 
 module.exports = router;
