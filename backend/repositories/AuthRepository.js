@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../config/database/mysql.client');
 
@@ -8,6 +9,11 @@ const CryptoSecurityService = require('../services/CryptoSecurityService')
 const RessourceNotFound = require('../core/errors/NotFoundRessource');
 
 //repository
+=======
+const pool = require('../config/database/mysql.client');
+const RessourceNotFound = require('../core/errors/NotFoundRessource');
+
+>>>>>>> 4a5a0b5 (migration prisma -> mysql2 & blaclist token)
 class AuthRepository {
 
     /**
@@ -39,6 +45,7 @@ class AuthRepository {
      * @param {string} password
      * @param {string} name
      * @param {string} git_url
+<<<<<<< HEAD
      * @param {string} git_access_token
      * @returns {Promise<{id: string, email: string, name:string,  }>} The saved user data
      */
@@ -59,6 +66,20 @@ class AuthRepository {
             id: user.insertId,
             email, name, git_url,
         };
+=======
+     * @param {string} access_token
+     * @returns {Promise<Object>} The saved user data
+     */
+    static async save({ email, password, git_url, access_token, name }) {
+        const [result] = await pool.query(
+            `INSERT INTO account (email, password, name, git_url, access_token)
+             VALUES (?, ?, ?, ?, ?)`,
+            [email, password, name, git_url, access_token]
+        );
+
+        // result.insertId contient l'ID généré par MySQL
+        return { id: result.insertId, email, password, name, git_url, access_token };
+>>>>>>> 4a5a0b5 (migration prisma -> mysql2 & blaclist token)
     }
 }
 
