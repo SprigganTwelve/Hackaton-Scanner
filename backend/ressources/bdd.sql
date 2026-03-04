@@ -43,9 +43,11 @@ CREATE TABLE tools(
 -- Represent unique rule that could be violated (e.g. AWS Hardcoded Password, etc.)
 CREATE TABLE rule(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   check_id VARCHAR(250) NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
+   
+   check_id VARCHAR(250) NOT NULL UNIQUE,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
    description TEXT NOT NULL,                   -- represents the description of the rule
    name VARCHAR(250) NOT NULL,                  -- represents the name of the rule
+
 
    owasp_category_id INT NOT NULL,              -- represents the OWASP category of the rule
    
@@ -68,14 +70,14 @@ CREATE TABLE analysis_record(
 
 CREATE TABLE analysis_tools(
    analysis_record_id INT NOT NULL,
-   tools_id INT NOT NULL,
+   tool_id INT NOT NULL,
 
-   PRIMARY KEY (analysis_record_id, tools_id),
+   PRIMARY KEY (analysis_record_id, tool_id),
 
    FOREIGN KEY(analysis_record_id)
       REFERENCES analysis_record(id) ON DELETE CASCADE,
 
-   FOREIGN KEY(tools_id)
+   FOREIGN KEY(tool_id)
       REFERENCES tools(id)
 );
 
@@ -100,7 +102,7 @@ CREATE TABLE finding(
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
    code TEXT NOT NULL,                         -- represents the code snippet where the error is located
 
-   tools_id INT NOT NULL,
+   tool_id INT NOT NULL,
    rule_id INT NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
    analysis_record_id INT NOT NULL,
 
@@ -108,7 +110,7 @@ CREATE TABLE finding(
    UNIQUE(fingerprint, analysis_record_id),
 
    FOREIGN KEY(rule_id) REFERENCES rule(id),
-   FOREIGN KEY(tools_id) REFERENCES tools(id),
+   FOREIGN KEY(tool_id) REFERENCES tools(id),
    FOREIGN KEY(analysis_record_id) REFERENCES analysis_record(id) ON DELETE CASCADE
 );
 

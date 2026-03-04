@@ -18,6 +18,7 @@ router.get('/projects', checkUserAuthorization, UserQueryController.getUserProje
 
 router.get('/projects/:projectId/analysis', checkUserAuthorization, UserQueryController.getProjectAnalysis);
 router.get('/analysis/:analysisId/findings', checkUserAuthorization, UserQueryController.getAnalysisFindings);
+router.get('/analysis/:analysisId/reports', checkUserAuthorization, UserQueryController.getAnalysisReports);
 
 router.get('/stats/kpi', checkUserAuthorization, UserQueryController.getKPIStats) //Key Performance Indicator
 

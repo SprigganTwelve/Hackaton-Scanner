@@ -41,7 +41,7 @@ VALUES
 -- ==============================
 -- ANALYSIS TOOLS (many-to-many)
 -- ==============================
-INSERT INTO analysis_tools (analysis_record_id, tools_id)
+INSERT INTO analysis_tools (analysis_record_id, tool_id)
 VALUES
 (1, 1), -- semgrep
 (1, 2), -- eslint
@@ -53,7 +53,7 @@ VALUES
 -- FINDINGS
 -- ==============================
 INSERT INTO finding 
-(score_penality, pattern_type, file_path, severity, code, tools_id, rule_id, analysis_record_id, fingerprint)
+(score_penality, message, file_path, severity, code, tool_id, rule_id, analysis_record_id, fingerprint)
 VALUES
 (2.0, 'hardcoded_secret', 'src/config.js', 'HIGH',
  'const API_KEY = "123456SECRET";',

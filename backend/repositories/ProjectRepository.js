@@ -61,7 +61,7 @@ class ProjectRepository {
      * @param {string} userId - the unique identifier of the user
      * @param {string} projectId - the unique identifier of the project
      * @throws {DomainError} - thrown if the project does not belogn to the user
-     * @returns {void} - it returns nothing wehn everything is okay
+     * @returns {Promise<void>} - it returns nothing wehn everything is okay
      */
     static async assessProjectOwnership(userId, projectId)
     {
