@@ -1,6 +1,6 @@
 
 const UserRepository = require('../repositories/UserRepository');
-const { generateReport } = require('../services/ReportService');
+const { generateReport } = require('../services/ReportGenerator');
 
 exports.generateUserReport = async (req, res) => {
     try {
@@ -22,12 +22,12 @@ exports.generateUserReport = async (req, res) => {
             message: 'Rapport généré avec succès', filePath 
         });
 
-    } catch (error) {
-        console.error(err);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Erreur lors de la génération du rapport', 
-            error: err.message 
-        });
+    } catch (err) {
+		console.error(err);
+		return res.status(500).json({
+			success: false,
+			message: 'Erreur lors de la génération du rapport',
+			error: err.message
+		});
     }
 };

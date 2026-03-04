@@ -25,7 +25,7 @@ exports.login = async (req, res) => {
         
         //Password Validation
         const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email })
-        const isPasswordOkay = await PasswordHasher.compare(credentials.password, hashedPassword)
+        const isPasswordOkay = await PasswordHasher.compare(password, hashedPassword)
 
         if(!isPasswordOkay)
             return res.json({message: "mot de passe invalide"}).status(401)
@@ -75,7 +75,7 @@ exports.register = async (req, res)=>{
             email,
             password,
             git_url,
-            hash_git_access_token
+            git_access_token
         } = req.body;
 
         if(!email || !password)
@@ -91,19 +91,19 @@ exports.register = async (req, res)=>{
         const user = await AuthRepository.save({
             name, 
             email,
-            password,
+            password: await PasswordHasher.hash(password),
             git_url,
-            hash_git_access_token: hash_git_access_token || null
+            hash_git_access_token: git_access_token ? await PasswordHasher.hash(git_access_token) : null
         })
-        return res.json({
-            user,
-            message: "Opération exécuté avec succès"
-        }).status(200)
+        return res.status(200).json({
+			user,
+			message: "Opération exécutée avec succès",
+		});
     }
     catch(error)
     {
         console.log("Something went wrong !! ", error)
-        return res.json({message: "Une erreur est survenue, Veuillez reéssayer"}).status(400)
+        return res.status(500).json({ message: "Une erreur est survenue, veuillez réessayer" });
     }
 }
 

@@ -48,7 +48,7 @@ class BlacklistedTokenRepository {
     static async deleteMany({ userId }) {
         await pool.query(
             `DELETE FROM blacklisted_token 
-             WHERE user_id = ? AND revoked_at < ?`,
+             WHERE account_id = ? AND revoked_at < ?`,
             [userId, new Date()]
         );
     }

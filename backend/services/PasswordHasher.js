@@ -1,27 +1,20 @@
+const bcrypt = require("bcrypt");
 
+class PasswordHasher {
+  static async hash(password) {
+    const saltRounds = 10;
 
-const bcrypt = require('bcrypt')
-
-class PasswordHasher
-{
-
-    /**
-     * This function is used to hash a password
-     * for security
-     * @param {string} password 
-     * @returns 
-     */
-    static async hash({password})
-    {
-        const saltRounds = 10;
-        const hashPaswword = await bcrypt.hash(password, saltRounds);
-        return hashPaswword;
+    if (typeof password !== "string" || password.length === 0) {
+      throw new Error("PasswordHasher.hash: password missing/invalid");
     }
 
-    static async compare({password, hashedPassword})
-    {
-        return await bcrypt.compare(password, hashedPassword);
-    }
+    return await bcrypt.hash(password, saltRounds);
+  }
+
+  static async compare(password, hashedPassword) {
+    if (!password || !hashedPassword) return false;
+    return await bcrypt.compare(password, hashedPassword);
+  }
 }
 
-module.exports =  PasswordHasher 
+module.exports = PasswordHasher;
