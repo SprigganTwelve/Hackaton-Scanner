@@ -90,7 +90,32 @@ exports.getAnalysisFindings = async (req, res) => {
     }
 }
 
+exports.getAnalysisReports = async (req, res) => {
+    try{
+        /** @var {AuthPlayload} authPayload */
+        const authPayload = req.user;
+        const { analysisId } = req.params;
+
+        const reports = await UserRepository.getAnalysisReports(authPayload.sub, analysisId);
+
+        return res.status(200).json({
+            success: true,
+            data: reports
+        });
+    }
+    catch(error)
+    {
+        console.log("Something went wrong !! ", error)
+        return res.status(500).json({
+            success: false,
+            message: 'Une erreur est survenue lors de la récupération des rapports de l\'analyse de l\'utilisateur'
+        });
+    }
+}
+
 
 exports.getKPIStats = async(req, res)=>{
 
 }
+
+

@@ -9,11 +9,14 @@ const { execSync } = require('child_process');
 //Data Transfer object
 const ScanResult = require('./DTO/ScanResult')
 const MappedIssue = require('./DTO/MappedIssue')
+const OwaspCategoryMap = require('./DTO/OwaspCategoryMap')
+
 //Enums
 const CodeScannerTools = require('../enums/CodeScannerTool')
 
 //Utils
 const ScoreAnalizer = require('../utils/ScoreAnalizer');
+const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 
 //config
 
@@ -27,6 +30,7 @@ class CodeScanner {
      * @param {Object} param0
      * @param {string} param0.repoUrl - represent the repo url to scan
      * @param {Array<string>} param0.scanTools - represent the list of tools to use for scanning (e.g. ['semgrep', 'eslint', 'npmAudit'])
+     * @returns {Promis<ScanResult>}  - The result of teh scan
      */
     static performScan({repoUrl, scanTools}) {
         return new Promise((resolve, reject) => {
@@ -35,6 +39,9 @@ class CodeScanner {
             let eslintResults = null;
             let auditResults = null;
             const tmpDir = path.join(os.tmpdir(), Date.now().toString());
+
+            //Clone repository
+            const gitCloneOutput = execSync(`git clone ${repoUrl} ${tmpDir}`,{ encoding: 'utf8'} )
 
             // SEMGREP
             if (scanTools.includes(CodeScannerTools.SEMGREP)) {
@@ -100,7 +107,7 @@ class CodeScanner {
      */
     static performZipScan({ zip_name, userId, path, scanTools}) {
         return new Promise((resolve, reject) => {
-            const zipPath= path 
+            const zipPath= path.join(BASIC_UPLOADING_FOLDER_PATH, userId, '/projects')
             const tmpDir = path.join(os.tmpdir(), Date.now().toString());
 
             let semgrepResults = null;
@@ -169,24 +176,10 @@ class CodeScanner {
     /**
      * Classify semgrep results into OWASP categories based on the metadata tags provided by semgrep rules.
      * @param {Object} semgrepResults - The raw results from semgrep scan.arguments
-     * @returns {{
-     *      start_line: number,
-     *      end_line?: number
-     * }[]}
+     * @returns {OwaspCategoryMap[]}
      */
     static mapOwasp(semgrepResults) {
-        const categories = {
-            A01_Broken_Access_Control: [],
-            A02_Security_Misconfiguration: [],
-            A03_Software_Supply_Chain_Failures: [],
-            A04_Cryptographic_Failures: [],
-            A05_Injection: [],
-            A06_Insecure_Design: [],
-            A07_Auth_Failures: [],
-            A08_Data_Integrity_Failures: [],
-            A09_Logging_Failures: [],
-            A10_Mishandling_Of_Exceptional_onditions: []
-        };
+        const categories = new OwaspCategoryMap ();
 
         if (!semgrepResults?.results)
             return categories;

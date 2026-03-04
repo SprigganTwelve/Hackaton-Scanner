@@ -85,8 +85,8 @@ exports.addProjectWithZip = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Zip File manquant'})
         }
 
-        const zipFileName = Date.now() + '_' + file.originalname.replace(/\s+/g, '_');  //the name of the file in a unique format to avoid any conflicts
-        const destPath = path.join(BASIC_UPLOADING_FOLDER_PATH, `${authPayload.sub}/${zipFileName}`); //final folder destination where the file will be unzipped
+        const zipFileName = Date.now() + '_' + file.originalname.replace(/\s+/g, '_');                          //the name of the file in a unique format to avoid any conflicts
+        const destPath = path.join(BASIC_UPLOADING_FOLDER_PATH, `${authPayload.sub}/projects/${zipFileName}`);  //final folder destination where the file will be unzipped
 
         //Save the project in the database & decompress the zip file in the same time, 
         // if any error occurs we will rollback the transaction and delete any decompressed files if needed
@@ -134,7 +134,8 @@ exports.addProjectWithZip = async (req, res) => {
  */
 exports.scanRepo = async (req, res) => {
     //Data validation
-    const { repoUrl, scanTools } = req.body;
+    const {projectId, repoUrl, scanTools } = req.body;
+
     if (!repoUrl) {
         return res.status(400).json({ success: false, message: 'repoUrl manquant' });
     }
@@ -146,7 +147,7 @@ exports.scanRepo = async (req, res) => {
         });
     }
 
-    //Check that only valid scanning tools are provided
+    // -- Check that only valid scanning tools are provided
     if(!scanTools.every(tool => CodeScannerTool.isValidTool(tool))){
         return res.status(400).json({ 
             success: false,
@@ -154,26 +155,43 @@ exports.scanRepo = async (req, res) => {
         });
     }
 
-    try {
-        const results = await CodeScanner.performScan({repoUrl, scanTools});
-        const semgrepResults = results.semgrepResults || [];
-        
-        //Save the scan results in the database
-        if(Array.isArray(semgrepResults) && semgrepResults.length > 0){
-            semgrepResults.forEach(result => {
-                const { check_id, path, start, end, extra: { likelihood } } = result;
-                UserRepository.saveScanResult({
-                    userId: req.user.sub,
-                    tool: 'semgrep',
-                    checkId: check_id,
-                    filePath: path,
-                    lineStart: start.line,
-                    lineEnd: end.line,
-                    status: likelihood || 'unknown',
-                });
-            })
-        }
+        /** @var {AuthJwtPayload} user */
+    const user = req.user;
 
+    // -- Project existence validation
+    try{
+        await ProjectRepository.assessProjectOwnership(user.sub, projectId)
+    }
+    catch(error){
+        console.log('Error while validating project ownership : ', error)
+        return res.status(403).json({
+            success: false,
+            message: 'Vous n\'avez pas la permission d\'accéder à ce projet'
+        })
+    };
+
+    try {
+
+        //Processed with the code scanner service
+        /** @type {ScanResult} */
+        const scanResult = await CodeScanner.performScan({repoUrl, scanTools});
+        
+        //Save database analisys resutlt
+        DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
+            try{
+                await AnalysisRecordRepository.addAnalysisRecord({ 
+                    project_id: projectId,
+                    score: scanResult.securityScore
+                });
+                RecordScanHelper.execute(scanResult)
+                commit()
+            }
+            catch(error)
+            {
+                console.log("Something went wrong!!, error: ", error?.message)
+                rollback()
+            }
+        })
         //Retunn the scan results to the client
         return res.status(200).json({ success: true, results: results });
     }
@@ -182,6 +200,7 @@ exports.scanRepo = async (req, res) => {
         return res.status(500).json({ success: false, message: error?.message });
     }
 };
+
 
 
 
@@ -217,6 +236,7 @@ exports.scanZip = async (req, res) => {
         })
     };
 
+    // Saving
     try {
         const project = await ProjectRepository.getProjectById(projectId)
         
@@ -249,7 +269,6 @@ exports.scanZip = async (req, res) => {
                 rollback()
             }
         })
-
 
         return res.status(200).json({ success: true, results });
     }

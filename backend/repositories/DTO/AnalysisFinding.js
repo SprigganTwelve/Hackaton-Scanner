@@ -7,7 +7,7 @@ class AnalysisFinding{
         filePath,
         severity,
         code,
-        toolsId,
+        tool_id,
         ruleId,
         analysisRecordId,
         fingerprint,
@@ -20,7 +20,7 @@ class AnalysisFinding{
         this.filePath = filePath;
         this.severity = severity;
         this.code = code;
-        this.toolsId = toolsId;
+        this.tool_id = tool_id;
         this.ruleId = ruleId;
         this.analysisRecordId = analysisRecordId;
         this.fingerprint = fingerprint;

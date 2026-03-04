@@ -3,6 +3,8 @@ const pool = require('../config/database')
 const UserProfile = require('./DTO/User.profile');
 const UserProject = require('./DTO/User.project');
 const AnalysisFinding = require('./DTO/AnalysisFinding');
+const AnalysisReport = require('./DTO/AnalysisReport');
+
 /**
  * Repository for user-related database operations, such as saving scan results and retrieving user access tokens.
  */
@@ -77,7 +79,7 @@ class UserRepository
         FROM analysis_record ar
         JOIN project p ON ar.project_id = p.id
         LEFT JOIN analysis_tools at ON at.analysis_record_id = ar.id
-        LEFT JOIN tools t ON t.id = at.tools_id
+        LEFT JOIN tools t ON t.id = at.tool_id
         WHERE ar.project_id = ?
         AND p.account_id = ?
         ORDER BY ar.created_at DESC`,
@@ -115,25 +117,27 @@ class UserRepository
 
     static async getAnalysisFindings(analysisId){
         const [rows] = await pool.query(
-        `SELECT 
-            f.id, f.score_penalty,  f.file_path, f.severity, f.code, f.tools_id, f.rule_id, f.analysis_record_id, f.fingerprint,
-            o.name AS owaspCategory,
-            s.corrective_measure AS solution
-        FROM finding f
-        JOIN rule r ON f.rule_id = r.id
-        JOIN owasp_category o ON r.owasp_category_id = o.id
-        LEFT JOIN solution s ON f.id = s.finding_id
-        WHERE f.analysis_record_id = ?`,
-        [analysisId]
-    );
+            `SELECT 
+                f.id, f.file_path, f.severity, f.code, f.tool_id, f.rule_id, f.analysis_record_id, f.fingerprint,
+                o.name AS owaspCategory,
+                s.corrective_measure AS solution
+            FROM finding f
+            JOIN rule r ON f.rule_id = r.id
+            JOIN owasp_category o ON r.owasp_category_id = o.id
+            LEFT JOIN solution s ON f.id = s.finding_id
+            WHERE f.analysis_record_id = ?`,
+            [analysisId]
+        );
+
+
 
         return rows.map(finding => new AnalysisFinding({
             findingId: finding.id,
-            scorePenalty: finding.score_penalty,
+            scorePenalty: finding?.score_penalty ?? null ,
             filePath: finding.file_path,
             severity: finding.severity,
             code: finding.code,
-            toolsId: finding.tools_id,
+            toolsId: finding.tool_id,
             ruleId: finding.rule_id,
             analysisRecordId: finding.analysis_record_id,
             fingerprint: finding.fingerprint,
@@ -142,6 +146,25 @@ class UserRepository
         }));
         }
     
+
+        static  async getAnalysisReport(analysisId){
+        const [rows] = await pool.query(
+            `SELECT id, format, created_at, original_name, analysis_id
+             FROM report
+             WHERE analysis_id = ?`,
+            [analysisId]
+        );
+
+        return rows.map(report => new AnalysisReport({
+            reportId: report.id,
+            format: report.format,
+            createdAt: report.created_at,
+            originalName: report.original_name,
+            analysisId: report.analysis_id
+        }));
+    }
+        
+        
     
 }
 module.exports = UserRepository
