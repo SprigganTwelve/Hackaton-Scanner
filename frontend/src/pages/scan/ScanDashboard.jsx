@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getScanSummary, listFindings } from "../../services/scans.services";
 import { useNavigate } from "react-router-dom";
-// import pour searchbar
-import { useOutletContext } from "react-router-dom";
 import "./ScanDashboard.css";
 
 import {

@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "./FixesPage.css";
-
+import { listFixes } from "../../services/analysis.services"
 //  Mock local (tu pourras remplacer par service + backend plus tard)
-const MOCK_FIXES = [
-  { id: "f1", repoUrl: "src/App.js", codeCorrompu: true },
-  { id: "f2", repoUrl: "src/LoginForm.jsx", codeCorrompu: false },
-];
+// const MOCK_FIXES = [
+//   { id: "f1", repoUrl: "src/App.js", codeCorrompu: true },
+//   { id: "f2", repoUrl: "src/LoginForm.jsx", codeCorrompu: false },
+// ];
 
-const MOCK_DEPENDENCIES = [
-  { id: "d1", name: "react", vulnerability: "None" },
-  { id: "d2", name: "axios", vulnerability: "High - XSS" },
-];
+// const MOCK_DEPENDENCIES = [
+//   { id: "d1", name: "react", vulnerability: "None" },
+//   { id: "d2", name: "axios", vulnerability: "High - XSS" },
+// ];
 
 // Composant pour une ligne fichier
 function FixeItem({ item }) {
@@ -41,6 +41,36 @@ function DependencyItem({ dep }) {
 }
 
 export default function FixesPage() {
+	const scanId = "1"; // TODO: plus tard via route params
+
+  const [fixes, setFixes] = useState([]);
+  const [dependencies, setDependencies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    listFixes(scanId)
+      .then((data) => {
+        // si listFixes renvoie un tableau
+        if (Array.isArray(data)) {
+          setFixes(data);
+          setDependencies([]); // à brancher quand le backend fournit les deps
+          return;
+        }
+
+        // si listFixes renvoie un objet { fixes, dependencies }
+        setFixes(data?.fixes ?? []);
+        setDependencies(data?.dependencies ?? []);
+      })
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [scanId]);
+
+  if (loading) return <p>Chargement…</p>;
+  if (error) return <p>Erreur: {String(error.message || error)}</p>;
   return (
     <div className="fixes-page">
       {/* Header interne avec boutons */}
@@ -56,20 +86,22 @@ export default function FixesPage() {
       <div className="fixes-section">
         <h2>Fichiers Corrompus</h2>
         <div className="fixes-list">
-          {MOCK_FIXES.map((f) => (
-            <FixeItem key={f.id} item={f} />
-          ))}
+          	{fixes.map((f) => (
+				<FixeItem key={f.id} item={f} />
+			))}
         </div>
       </div>
 
       {/* Section 2 : Dépendances vulnérables */}
       <div className="fixes-section">
         <h2>Dépendances vulnérables</h2>
-        <div className="fixes-list">
-          {MOCK_DEPENDENCIES.map((d) => (
-            <DependencyItem key={d.id} dep={d} />
-          ))}
-        </div>
+			<div className="fixes-list">
+				{dependencies.length === 0 ? (
+					<p style={{ opacity: 0.7 }}>Aucune dépendance vulnérable détectée (mock).</p>
+				) : (
+					dependencies.map((d) => <DependencyItem key={d.id} dep={d} />)
+				)}
+			</div>
       </div>
     </div>
   );
