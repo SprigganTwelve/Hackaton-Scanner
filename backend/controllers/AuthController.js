@@ -75,7 +75,7 @@ exports.register = async (req, res)=>{
             email,
             password,
             git_url,
-            hash_git_access_token
+            git_access_token
         } = req.body;
 
         if(!email || !password)
@@ -93,7 +93,7 @@ exports.register = async (req, res)=>{
             email,
             password,
             git_url,
-            hash_git_access_token: hash_git_access_token || null
+            git_access_token: git_access_token || null
         })
         return res.json({
             user,

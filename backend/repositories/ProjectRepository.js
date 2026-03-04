@@ -1,7 +1,7 @@
 
 const pool = require('../config/database/mysql.client');
 
-const DomainError = require('../errors/DomainError');
+const DomainError = require('../core/errors/DomainError');
 
 /**
  * A repository class responsible for handling database operations related to projects.

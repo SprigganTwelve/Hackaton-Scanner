@@ -22,6 +22,8 @@ const RecordScanHelper = require('../utils/RecorScanHelper')
 
 const AuthPlayload = require('../utils/AuthJwtPayload');
 
+
+
 /**
  * Help an user add a project to his account with git_url
  * @param {*} req 
@@ -30,18 +32,27 @@ const AuthPlayload = require('../utils/AuthJwtPayload');
  */
 exports.addProjectWithURL = async (req, res) => {
     //Data validation
-    const { name, repoUrl, scannTools, token } = req.body;
+    /**
+     * Extracts project information from the request body.
+     *
+     * @param {Object} req.body
+     * @param {string} req.body.name - The name of the project (e.g., Git repository name) or a custom name provided by the user.
+     * @param {string} req.body.repoUrl - The URL of the repository to scan.
+     * @param {Array<string>} req.body.scanTools - An array specifying which scanning tools the user wants to use (e.g., ['semgrep', 'eslint', 'npmAudit']).
+     * @param {string} [req.body.token] - Optional access token for private repositories.
+     */
+    const { name, repoUrl, scanTools, token } = req.body;
 
     /** @var {AuthPlayload} authPayload */
     const authPayload = req.user;
     if( !name || 
         !repoUrl || 
-        !Array.isArray(scannTools) || 
-        scannTools.length === 0
+        !Array.isArray(scanTools) || 
+        scanTools.length === 0
     ){
         return res.status(400).json({ 
             success: false,
-            message: 'Veuillez fournir tous les champs requis : name, repoUrl, scannTools (doit être un tableau non vide)'
+            message: 'Veuillez fournir tous les champs requis : name, repoUrl, scanTools (doit être un tableau non vide)'
         });
     }
 
@@ -64,6 +75,9 @@ exports.addProjectWithURL = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout du projet' });
     }
 }
+
+
+
 
 
 /**
@@ -125,6 +139,8 @@ exports.addProjectWithZip = async (req, res) => {
 
 
 
+
+
 /**
  * Allow an user to scan a project with the selected scanning tools
  * @param {*} req 
@@ -150,7 +166,7 @@ exports.scanRepo = async (req, res) => {
     if(!scanTools.every(tool => CodeScannerTool.isValidTool(tool))){
         return res.status(400).json({ 
             success: false,
-            message: 'scannTools contient des outils de scan invalides. Les outils valides sont : semgrep, eslint, npmAudit'
+            message: 'scanTools contient des outils de scan invalides. Les outils valides sont : semgrep, eslint, npmAudit'
         });
     }
 
