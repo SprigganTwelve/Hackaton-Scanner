@@ -1,6 +1,8 @@
 
 const CodeCorrector = require('../services/CodeCorrector');
 const UserRepository = require('../repositories/UserRepository');
+
+const FindingRepository = require('../repositories/FindingRepository');
 const CorrectionRepository = require('../repositories/CorrectionRepository');
 
 exports.previewCorrection = async (req, res) => {
@@ -8,7 +10,7 @@ exports.previewCorrection = async (req, res) => {
 
         const { findingId } = req.params;
 
-        const finding = await UserRepository.getFindingById(findingId);
+        const finding = await FindingRepository.getFindingById(findingId);
 
         if (!finding) {
             return res.status(404).json({ 
@@ -19,7 +21,7 @@ exports.previewCorrection = async (req, res) => {
 
         const suggestedFix = CodeCorrector.generateCorrection(
             finding.ruleType, 
-            finding.Code
+            finding.code
         );
 
         return res.status(200).json({ 
@@ -37,6 +39,8 @@ exports.previewCorrection = async (req, res) => {
     }
 };
 
+
+
 exports.applyCorrection = async (req, res) => {
     try {
 
@@ -53,7 +57,7 @@ exports.applyCorrection = async (req, res) => {
 
         const correctedCode = CodeCorrector.generateCorrection(
             finding.ruleType,
-            finding.Code
+            finding.code
         );
 
         CodeCorrector.applyCorrection(finding.filePath, finding.code, correctedCode);
@@ -65,7 +69,8 @@ exports.applyCorrection = async (req, res) => {
             message: "Correction appliquée avec succès"
         });
 
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({
             success: false,

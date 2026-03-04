@@ -10,6 +10,31 @@ const LineInfo = require('../valueObjects/LineInfo')
 
 class FindingRepository
 {
+
+    /**
+     * Récupère un finding par son ID
+     * @param {number|string} finding_id
+     * @returns {Promise<{id: number, code: string, ruleType: string} | null>}
+     */
+    static async getFindingById(finding_id) {
+        const [rows] = await pool.query(
+            `SELECT f.id, f.code, r.check_id AS ruleType
+            FROM finding f
+            JOIN rule r ON f.rule_id = r.id
+            WHERE f.id = ?`,
+            [finding_id]
+        );
+
+        if (rows.length === 0) return null;
+
+        const row = rows[0];
+        return {
+            id: row.id,
+            code: row.code,
+            ruleType: row.ruleType
+        };
+    }
+
     /**
      * This function hepl us creating a finding related to an analyze in the bdd system
      * @param {Finding} -  finding

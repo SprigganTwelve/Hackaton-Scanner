@@ -6,7 +6,7 @@ const AuthPlayload = require('../utils/AuthJwtPayload');
 
 exports.getUserProfile = async (req, res) => {
     try{
-        /** @var {AuthPlayload} authPayload */
+        /** @type {AuthPlayload} authPayload */
         const authPayload = req.user
         const userProfile = await UserRepository.getUserProfile(authPayload.sub)
         return res.status(200).json({
@@ -89,6 +89,8 @@ exports.getAnalysisFindings = async (req, res) => {
         });
     }
 }
+
+
 
 exports.getAnalysisReports = async (req, res) => {
     try{

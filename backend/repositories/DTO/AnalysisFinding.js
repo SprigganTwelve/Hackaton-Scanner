@@ -3,11 +3,10 @@
 class AnalysisFinding{
     constructor ({ 
         findingId,
-        scorePenalty,
         filePath,
         severity,
         code,
-        tool_id,
+        toolId,
         ruleId,
         analysisRecordId,
         fingerprint,
@@ -20,7 +19,7 @@ class AnalysisFinding{
         this.filePath = filePath;
         this.severity = severity;
         this.code = code;
-        this.tool_id = tool_id;
+        this.toolId = toolId;
         this.ruleId = ruleId;
         this.analysisRecordId = analysisRecordId;
         this.fingerprint = fingerprint;

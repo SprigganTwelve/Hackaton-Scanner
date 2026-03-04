@@ -1,0 +1,188 @@
+AUTHENTIFICATION:
+controller: AuthController
+route: /api/auth:
+        [POST]  /login: Use for logging an user
+                    input: { email: string, password: string } 
+                    output: {success: bool, message: string, token?: string }  #token is not null when operation succeed
+
+        [POST]      /logout: Use for logout a nuser
+                    input:
+                        header: {Authorization : 'Bearer ${token}'}
+                    output:
+                        { 
+                            sucess: false,
+                            message: "Token invalide"
+                        }
+
+        [POST] /register: 
+                    input:
+                        {            
+                            name: string,
+                            email: string,
+                            password: string,
+                            git_url: string,
+                            git_access_token: string
+                        }
+                    output:
+                        {
+                            success: bool,
+                            message: string,
+                            user?: {
+                                id: string,
+                                email: string,
+                                name:string,
+                            }
+                        }
+
+                    
+        
+
+!!ATENTION: Vous devez avoir un authorization bearer Token pour utiliser les routes suivantes (ci-dessous)
+
+controllers: UserController & UserQueryController
+route: /api/users:
+
+    --------------------  UserController-------------------------
+
+    ---ACTIONS-----------
+    ------ADD PROJECT-----------
+
+        [POST] /add-project/url:   Add project with git url
+            input:
+                {
+                    name: string,
+                    repoUrl:string, 
+                    token?:  string                         --Optionnal and used id the repo to handle is private
+                }
+            output:
+                {
+                    success: boolean, 
+                    message: string 
+                }
+        
+        [POST] /add-project/zip:  Add project with zip url
+            input: FormData(key, value)
+                FormData(
+                    file: File (Web API)        //The zip file
+                )
+            output:
+                {   
+                    success: bool,
+                    message: string
+                }
+
+    -----SCAN PROJECT-----------
+
+       [POST] /scan:  Scan project upload with git url
+            input: 
+                { 
+                    projectId: string,          -- the id of the project (stored in bdd)
+                    scanTools: string[]         the tools used for the scan
+                }
+            output: { success: bool, message: string }
+
+
+        [POST] /scan-zip: Scan project uploaded with zip file
+            input:
+                { 
+                    projectId: string,          -- the id of the project (stored in bdd)
+                    scanTools: string[]         the tools used for the scan
+                }
+            output:
+                { 
+                    success: bool, 
+                    message: string , 
+                    results?:  
+                } #the result exist only when the opreation went succesfully overwise it is undifined
+
+
+    --------- APPLY & VIEW CORRECTION TEMPLATE BASED -----------------
+
+        [GET] /analysis/:analysisId/report : Generate & Store rapport into /src/upload/:userId/<originalname>.pdf
+            params: {analysisId: string}
+            ouptput:
+            { 
+                success: true, 
+                message: 'Rapport généré avec succès',
+                fileName
+            }
+    
+        [GET] /finding/:findingId/preview   : Returuns OWAPS Suggestion (solution)
+                params: { findingId: string }
+                output: 
+                    {
+                        success: bool, 
+                        originalCode: string, 
+                        suggestedFix : string # string about suggestion
+                    }
+        
+        [POST] /finding/:findingId/apply   : apply correction to a given finding
+                params  : {findingId: string}
+                output:
+                    {
+                        success: bool,
+                        message: string
+                    }
+        
+        [POST]  /finding/:findingId/reject : reject correction
+                params  : {findingId: string}
+                output : {
+                    success: bool,
+                    message: string
+                }
+        
+
+        
+
+        --------------------  UserQueryController-------------------------
+route: /api/users:
+        [GET] /profile : retreive user profil line_info
+                ouptput: 
+                    {
+                        userId: string,
+                        name: string,
+                        email: string,
+                        git_url: string
+                    }
+        
+        [GET] /projects: retreive user projects
+                output:
+                    {
+                        projectId: string,
+                        name: string,
+                        createdAt: Date,
+                        url: string
+                        isUploaded: TINYINT
+                    }
+
+        [GET] /projects/:projectId/analysis: retreive analysis info about a project
+            params: {  projectId: string, }
+            output:
+                    {
+                        sucess: bool,
+                        data: {             # return when everything is okay
+                           analysisRecordId: number,
+                           projectId: number,
+                           status: string,
+                           score: string | null,
+                           startedAt: Date,
+                           tools: string[]      #go see the fillowing file about tools values (path: /src/enums/CodeScannerTool.js) 
+                        }
+                    }
+
+        [GET]   /analysis/:analysisId/findings: Retreive all finding link to an analysis
+                    output: 
+                    {
+                        findingId:          string,
+                        filePath:           string,
+                        severity:           string,
+                        code:               string,
+                        toolId:             string,         //The id of the tool stored in bdd
+                        ruleId:             string,         //The id of the rule stored in bdd
+                        analysisRecordId:   string,         //The id of the analysis_record
+                        fingerprint:        string,         //A unique identifiant that helps us check if the same error has been identified
+                        owaspCategory:      string,         //The owaps category (see src/enums/OWASPVulnerabilityError.js)
+                        solution            string          //a corrective measure (desciption)
+                    }
+
+        [GET]   /analysis/:analysisId/reports: Download an user special report

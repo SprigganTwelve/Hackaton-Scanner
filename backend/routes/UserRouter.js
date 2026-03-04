@@ -22,9 +22,9 @@ router.post('/add-project/url', checkUserAuthorization, UserController.addProjec
 router.post('/add-project/zip', checkUserAuthorization, upload.single('file'), UserController.addProjectWithZip);
 
 router.post('/scan', checkUserAuthorization, UserController.scanRepo);
-router.post('/scan-zip', checkUserAuthorization, upload.single('file'), UserController.scanZip);
+router.post('/scan-zip', checkUserAuthorization, UserController.scanZip);
 
-router.post('/analysis/:analysisId/report', checkUserAuthorization, reportController.generateUserReport);
+router.get('/analysis/:analysisId/report', checkUserAuthorization, reportController.generateUserReport);
 
 
 router.get('/finding/:findingId/preview', checkUserAuthorization, CorrectionController.previewCorrection);

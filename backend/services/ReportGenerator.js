@@ -7,6 +7,13 @@ const UserRepository = require('../repositories/UserRepository');
 const ReportRepository = require('../repositories/ReportRepository');
 
 
+/**
+ * 
+ * @param {*} userId 
+ * @param {*} analysis 
+ * @param {*} findings 
+ * @returns {Promise<{ filePath: string, fileName: string }}>}
+ */
  async function generateReport(userId, analysis, findings) {
     if(!findings || findings.length === 0) {
         throw new Error('Aucun résultat trouvé pour ce rapport.');
@@ -14,8 +21,10 @@ const ReportRepository = require('../repositories/ReportRepository');
 
     // Dossier pour stocker les rapports de cet utilisateur
     const reportsDir = path.join(__dirname, '../uploads', `${userId}`, 'rapports');
-    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+    
     //Créer le dossier s'il n'existe pas
+    if (!fs.existsSync(reportsDir)) 
+        fs.mkdirSync(reportsDir, { recursive: true });
 
 
     // Nom de fichier unique
@@ -33,7 +42,7 @@ const ReportRepository = require('../repositories/ReportRepository');
     doc.moveDown();
     doc.fontSize(14).text(`Analyse ID: ${analysis.id}`);
     doc.text(`Statut: ${analysis.status}`);
-    doc.text(`Date : ${new Date(analysis.created_at).toLocaleString()}`);
+    doc.text(`Date : ${new Date(analysis.started_at).toLocaleString()}`);
     doc.moveDown();
     doc.fontSize(16).text('Résultats de l\'analyse');
     doc.moveDown();
@@ -67,7 +76,7 @@ const ReportRepository = require('../repositories/ReportRepository');
         });
     }
 
-    return filePath;
+    return {filePath, fileName};
 }
 
 module.exports = { generateReport };

@@ -12,7 +12,7 @@ const { checkUserAuthorization } = require('../middlewares/checkUserAuthorizatio
 const UserQueryController = require('../controllers/UserQueryController');
 
 
-router.post('/profile', checkUserAuthorization, UserQueryController.getUserProfile);
+router.get('/profile', checkUserAuthorization, UserQueryController.getUserProfile);
 router.get('/projects', checkUserAuthorization, UserQueryController.getUserProjects);
 
 

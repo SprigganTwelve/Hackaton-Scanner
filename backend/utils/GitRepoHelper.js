@@ -23,7 +23,7 @@ class GitRepoHelper {
         **/
         if(res.status === 403) //Access dinied
         {
-            const access_token = token ?? UserRepository.getUserAccessToken(userId)
+            const access_token = token ?? await UserRepository.getUserAccessToken(userId)
             if(!access_token)
                 return
             const authRes = await fetch(
