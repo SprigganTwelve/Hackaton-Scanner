@@ -1,35 +1,44 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import NewScanPage from "./pages/NewScan/NewScanPage";
+import FindingsPage from "./pages/Findings/Findings";
+import ScanDashboard from "./pages/scan/ScanDashboard";
+import ReportsPage from "./pages/Reports/ReportsPage"
+import AppLayout from "./layouts/appLayout";
+import FixesPage from "./pages/Fixes/FixesPage";
 
-function App() {
-  const [count, setCount] = useState(0)
+//-------------------Ajouté pour Login et Register -----------------
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+import LoginPage from "./pages/Login/Login";
+import RegisterPage from "./pages/Register/Register";
+
+//------------------------------------------------------------------
+
+const router = createBrowserRouter([
+
+  //------------------------------------------------------------------------------------
+  { path: "/login", element: <LoginPage /> },         //Ajouté pour Login et Register
+  { path: "/register", element: <RegisterPage /> },   //Ajouté pour Login et Register
+  //------------------------------------------------------------------------------------
+
+  {
+    path: "/",
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <Navigate to="/new-scan" replace /> },
+
+      { path: "new-scan", element: <NewScanPage /> },
+
+      { path: "scans/:scanId", element: <ScanDashboard /> },
+
+      { path: "scans/:scanId/findings", element: <FindingsPage /> },
+
+	    { path: "scans/:scanId/reports", element: <ReportsPage /> },
+      
+      { path: "scans/:scanId/fixes", element: <FixesPage /> },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
-
-export default App

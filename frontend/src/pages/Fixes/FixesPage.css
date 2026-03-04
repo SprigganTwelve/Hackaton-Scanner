@@ -1,0 +1,119 @@
+:root {
+  --bg: #0b0f2b; /* fond général de la page */
+  --card-bg: #d9d9d9; /* fond des cartes */
+  --text: #ffffff;
+  --muted-text: #b0b0b0;
+  --accent: #a04fff; /* bouton push */
+  --btn-apply-bg: #e0e0e0; /* bouton apply correction */
+  --btn-apply-text: #000000;
+}
+
+/* Page */
+.fixes-page {
+  background-color: var(--bg);
+  color: var(--text);
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+/* Header avec Push + Apply */
+.fixes-page__header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.fixes-page__header .btn-push {
+  background-color: var(--accent);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.fixes-page__header .btn-push:hover {
+  background-color: #8c3fff;
+}
+
+.fixes-page__header .btn-apply {
+  background-color: var(--btn-apply-bg);
+  color: var(--btn-apply-text);
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.fixes-page__header .btn-apply:hover {
+  background-color: #d4d4d4;
+}
+
+/* Sections */
+.fixes-section {
+  margin-top: 32px;
+}
+
+.fixes-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* Liste cartes */
+.fixes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Carte individuelle */
+.fixes-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: var(--card-bg);
+  padding: 12px 16px;
+  border-radius: 8px;
+  min-height: 60px;
+}
+
+/* Contenu gauche (nom + statut) */
+.fixes-card__info {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+.fixes-card__file {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #1a1a1a;
+}
+
+.fixes-card__status {
+  font-size: 14px;
+  color: #333333;
+}
+
+/* Bouton Apply à droite */
+.fixes-card__btn {
+  background-color: var(--btn-apply-bg);
+  color: var(--btn-apply-text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  height: fit-content;
+}
+
+.fixes-card__btn:hover {
+  background-color: #d4d4d4;
+}

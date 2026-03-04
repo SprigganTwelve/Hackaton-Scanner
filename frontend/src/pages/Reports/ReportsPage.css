@@ -1,0 +1,183 @@
+:root{
+  --card: rgba(92, 74, 168, 0.22);
+  --card2: rgba(92, 74, 168, 0.16);
+  --stroke: rgba(255,255,255,0.12);
+  --stroke2: rgba(255,255,255,0.08);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.65);
+  --muted2: rgba(255,255,255,0.45);
+  --accent: rgba(191, 171, 255, 0.85);
+}
+
+.rp{ color: var(--text); }
+
+.rp__top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rp__title{
+  margin:0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.rp__subtitle{
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rp__filters{ display:flex; gap: 10px; }
+
+.rp-month{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke2);
+  background: rgba(0,0,0,0.12);
+  color: var(--text);
+}
+
+.rp-month__icon{ opacity: .85; }
+
+.rp-select{
+  border:none;
+  outline:none;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.rp-topBtn{
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke2);
+  background: rgba(0,0,0,0.12);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.rp-card{
+  max-width: 560px;
+  background: linear-gradient(180deg, var(--card), rgba(92, 74, 168, 0.10));
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.rp-card__head{
+  font-size: 14px;
+  font-weight: 750;
+  margin-bottom: 12px;
+}
+
+.rp-list{
+  display:grid;
+  gap: 12px;
+}
+
+.rp-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke2);
+  background: rgba(0,0,0,0.12);
+}
+
+.rp-item__left{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+  min-width: 0;
+}
+
+.rp-item__circle{
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display:grid;
+  place-items:center;
+  border: 2px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  flex: 0 0 auto;
+}
+
+.rp-dlIcon{
+  font-size: 16px;
+  opacity: .9;
+}
+
+.rp-item__meta{ min-width: 0; }
+
+.rp-item__title{
+  font-size: 12px;
+  font-weight: 650;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 380px;
+}
+
+.rp-item__label{ color: rgba(255,255,255,0.75); font-weight: 650; }
+.rp-item__url{ color: rgba(255,255,255,0.92); }
+
+.rp-item__sub{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.rp-item__actions{
+  display:flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.rp-hint{
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.rp-empty{
+  padding: 12px;
+  color: var(--muted2);
+  font-size: 12px;
+}
+
+.rp-item__circleBtn{
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.rp-item__circleBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(191,171,255,0.45);
+  background: rgba(191,171,255,0.12);
+}
+
+.rp-item__circleBtn:active{
+  transform: translateY(0px);
+}
+
+/* Badge PDF non cliquable */
+.rp-formatPill{
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(191,171,255,0.40);
+  background: rgba(191,171,255,0.20);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+  user-select: none;
+}
