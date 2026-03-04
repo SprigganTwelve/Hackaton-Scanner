@@ -21,14 +21,14 @@ exports.login = async (req, res) => {
         
         //Data validation
         if(!email || !password)
-            return res.json({message: "S'il vous plaît, verifiez les chanps & données de la requête"})
+            return res.json({sucess: false,message: "S'il vous plaît, verifiez les chanps & données de la requête"})
         
         //Password Validation
-        const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email })
-        const isPasswordOkay = await PasswordHasher.compare(credentials.password, hashedPassword)
+        const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email: email.trim() })
+        const isPasswordOkay = await PasswordHasher.compare(password, hashedPassword)
 
         if(!isPasswordOkay)
-            return res.json({message: "mot de passe invalide"}).status(401)
+            return res.json({sucess: false, message: "mot de passe invalide"}).status(401)
 
         //Clear previous blacklisted token
         await BlacklistedTokenRepository.deleteMany({ userId })
@@ -45,13 +45,14 @@ exports.login = async (req, res) => {
         );
         return res.json({
             token,
+            success: true,
             message: 'Everuthing went smootly'
         }).status(200)
     }
     catch(error)
     {
         console.log("Something went wrong !! ", error)
-        return res.json({message: "Une erreur est survenue, Veuillez reéssayer"}).status(400)
+        return res.json({success: false, message: "Une erreur est survenue, Veuillez reéssayer"}).status(400)
     }
 }
 
@@ -79,63 +80,90 @@ exports.register = async (req, res)=>{
         } = req.body;
 
         if(!email || !password)
-            return res.json({message: "Les champs email et password sont requis"}).status(400)
+            return res.json({
+                success: false,
+                message: "Les champs email et password sont requis"}).status(400)
 
         if(git_url.trim() && !git_url.startsWith('https://github.com/'))
         {
             return res.json({
+                success: false,
                 message: 'S\'il vous plaît, veuillez saisir une url github valide'
-            })
+            }).status(400)
         }
 
         const user = await AuthRepository.save({
             name, 
             email,
-            password,
+            password: PasswordHasher.hash(password),
             git_url,
             git_access_token: git_access_token || null
         })
         return res.json({
             user,
+            success: true,
             message: "Opération exécuté avec succès"
         }).status(200)
     }
     catch(error)
     {
         console.log("Something went wrong !! ", error)
-        return res.json({message: "Une erreur est survenue, Veuillez reéssayer"}).status(400)
+        return res.json({
+            success: false,
+            message: "Une erreur est survenue, Veuillez reéssayer"
+        }).status(400)
     }
 }
 
 
-exports.logout = async (req, res)=>{
-    try{
-        //Data Validation
+exports.logout = async (req, res) => {
+    try {
         const authHeader = req.headers.authorization;
+
         if (!authHeader?.startsWith("Bearer ")) {
-            return res.status(401).json({ message: "Token manquant ou mal formé" });
+            return res.status(401).json({
+                message: "Token manquant ou mal formé"
+            });
         }
 
         const token = authHeader.replace("Bearer ", "");
 
-        //Check for token expiry 
-        try{
-            const decoded = jwt.verify(token)
-            const expiresAt = decoded?.exp 
-                                ? new Date(decoded.exp * 1000)
-                                : new Date();
-            BlacklistedTokenRepository.save({ token, revoked_at:  expiresAt })
-        }
-        catch(error)
-        {
-            console.log("Invalid token, error: ", error?.message)
+        let expiresAt;
+
+        try {
+            // Vérifie signature MAIS ignore expiration
+            const decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET,
+                { ignoreExpiration: true }
+            );
+
+            expiresAt = decoded?.exp
+                ? new Date(decoded.exp * 1000)
+                : new Date();
+
+        } catch (error) {
+            return res.status(400).json({
+                sucess: false,
+                message: "Token invalide"
+            });
         }
 
-        return res.json({ message: "Opération exécuté avec succès" }).status(200)
+        await BlacklistedTokenRepository.save({
+            token,
+            expired_at: expiresAt
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Déconnexion effectuée avec succès"
+        });
+
+    } catch (error) {
+        console.error("Logout error:", error);
+        return res.status(500).json({
+            sucess:false,
+            message: "Une erreur inattendue est survenue"
+        });
     }
-    catch(error)
-    {
-        console.log("Something went wrong !! ", error)
-        return res.json({message: "Une erreur inattendue est survenue, Veuillez reéssayer"}).status(400)
-    }
-}
+};

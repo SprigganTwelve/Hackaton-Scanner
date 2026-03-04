@@ -41,18 +41,16 @@ exports.addProjectWithURL = async (req, res) => {
      * @param {Array<string>} req.body.scanTools - An array specifying which scanning tools the user wants to use (e.g., ['semgrep', 'eslint', 'npmAudit']).
      * @param {string} [req.body.token] - Optional access token for private repositories.
      */
-    const { name, repoUrl, scanTools, token } = req.body;
+    const { name, repoUrl, token } = req.body;
 
     /** @var {AuthPlayload} authPayload */
     const authPayload = req.user;
     if( !name || 
-        !repoUrl || 
-        !Array.isArray(scanTools) || 
-        scanTools.length === 0
+        !repoUrl 
     ){
         return res.status(400).json({ 
             success: false,
-            message: 'Veuillez fournir tous les champs requis : name, repoUrl, scanTools (doit être un tableau non vide)'
+            message: 'Veuillez fournir tous les champs requis : name, repoUrl '
         });
     }
 
@@ -67,7 +65,10 @@ exports.addProjectWithURL = async (req, res) => {
     try {
         //Save the project in the database
         await UserRepository.addProject(authPayload.sub, {name, url: repoUrl})
-        return res.status(200).json({ ducess: true, message: 'Projet ajouté avec succès'})
+        return res.status(200).json({ 
+            success: true,
+            message: 'Projet ajouté avec succès'
+        })
     }
     catch (error) {
         //Log the error & return a messg to the client
@@ -149,11 +150,8 @@ exports.addProjectWithZip = async (req, res) => {
  */
 exports.scanRepo = async (req, res) => {
     //Data validation
-    const {projectId, repoUrl, scanTools } = req.body;
+    const { projectId, scanTools } = req.body;
 
-    if (!repoUrl) {
-        return res.status(400).json({ success: false, message: 'repoUrl manquant' });
-    }
 
     if(!Array.isArray(scanTools) || scanTools.length > 0){
         return res.status(400).json({ 
@@ -187,20 +185,26 @@ exports.scanRepo = async (req, res) => {
 
     try {
 
+        const project = await UserRepository.getUserById(user.sub)
         //Processed with the code scanner service
         /** @type {ScanResult} */
-        const scanResult = await CodeScanner.performScan({repoUrl, scanTools});
+        const scanResult = await CodeScanner.performScan({repoUrl: project.git_url, scanTools});
         
+        let results;
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                RecordScanHelper.execute(scanResult)
+                results = await RecordScanHelper.execute(scanResult)
                 commit()
             }
             catch(error)
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 rollback()
+                return res.json({
+                    success: false,
+                    message: 'Une erreur inattendu est survenue lors du scan'
+                }).status(400)
             }
         })
         //Retunn the scan results to the client
@@ -221,9 +225,6 @@ exports.scanZip = async (req, res) => {
     //Data validation
     const { projectId, scanTools } = req.body;
 
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Fichier ZIP manquant' });
-    }
 
     if(!Array.isArray(scanTools) || scanTools.length > 0){
         return res.status(400).json({ 
@@ -264,23 +265,40 @@ exports.scanZip = async (req, res) => {
             project.name, user.sub, scanTools
         );
         
+        let results;
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                RecordScanHelper.execute(scanResult)
+                results = await RecordScanHelper.execute(scanResult)
                 commit()
             }
             catch(error)
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 rollback()
+                return res.json({
+                    success: false,
+                    message: 'Une erreur inattendu est survenue lors du scan'
+                }).status(400)
             }
         })
 
-        return res.status(200).json({ success: true, results });
+        return res.status(200).json({ success: true,  results });
     }
     catch (error) {
         console.error('Erreur lors du scan du ZIP:', error);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+exports.executePush = async (req, res)=>{
+    try{
+        
+    }
+    catch(error)
+    {
+        console.error('Erreur lors du scan du ZIP:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

@@ -20,7 +20,7 @@ CREATE TABLE project(
    name VARCHAR(250) NOT NULL,                  -- can represent the name of the cloned repository or an original name of the uploaded zip file
    original_name VARCHAR(250) DEFAULT NULL,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   url VARCHAR(250) NOT NULL,                   -- can represent the url of the git project (ex: git repository url) or the local path
+   url VARCHAR(250) NOT NULL,                   -- Represent the git url if one is associated
    is_uploaded TINYINT(1) NOT NULL DEFAULT 0,   -- indicates if the project was uploaded as a zip file or not
 
    account_id VARCHAR(250) NOT NULL,
@@ -98,6 +98,8 @@ CREATE TABLE finding(
    id INT AUTO_INCREMENT PRIMARY KEY,
 
    file_path VARCHAR(250) NOT NULL,          -- represents the path of the file where the error is located
+
+   is_corrected TINYINT(1) DEFAULT 0;
    
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
    code TEXT NOT NULL,                         -- represents the code snippet where the error is located
@@ -141,7 +143,7 @@ CREATE TABLE blacklisted_token(
    id INT AUTO_INCREMENT PRIMARY KEY,
    hash_token VARCHAR(250),
    epired_at DATETIME,
-   issue_at DATETIME,
+   issue_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
    account_id VARCHAR(250) ,
    FOREIGN KEY(account_id) REFERENCES account(id) ON DELETE CASCADE

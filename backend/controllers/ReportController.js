@@ -1,25 +1,31 @@
 
 const UserRepository = require('../repositories/UserRepository');
 const { generateReport } = require('../services/ReportGenerator');
+const AuthJwtPayload = require('../utils/AuthJwtPayload')
 
 exports.generateUserReport = async (req, res) => {
     try {
-        const userId = req.user.sub;// Récupérer l'ID de l'utilisateur à partir du token d'authentification
-        const { analysisId } = req.params;// Récupérer l'ID de l'analyse à partir des paramètres de la requête
+        /** @type {AuthJwtPayload} */
+        const userId = req.user.sub;        // Récupérer l'ID de l'utilisateur à partir du token d'authentification
+        const { analysisId } = req.params;  // Récupérer l'ID de l'analyse à partir des paramètres de la requête
 
         const analysis = await UserRepository.getAnalysisById(userId, analysisId);// Vérifier que l'analyse existe et appartient à l'utilisateur
         if (!analysis) 
-            return res.status(404).json({ message: 'Analyse introuvable' });
+            return res.status(404).json({
+                sucess: false,
+                message: 'Analyse introuvable'
+            });
 
         const findings = await UserRepository.getAnalysisFindings(userId, analysisId);// Récupérer les résultats de l'analyse
         if (!findings || findings.length === 0) 
             return res.status(404).json({ success: false, message: 'Aucun résultat trouvé pour cette analyse' });
 
-        const filePath = await generateReport(userId, analysis, findings);// Générer le rapport et obtenir le chemin du fichier
+        const { filePath, fileName } = await generateReport(userId, analysis, findings);// Générer le rapport et obtenir le chemin du fichier
 
         return res.status(200).json({ 
             success: true, 
-            message: 'Rapport généré avec succès', filePath 
+            message: 'Rapport généré avec succès',
+            fileName
         });
 
     } catch (error) {

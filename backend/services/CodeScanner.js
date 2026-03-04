@@ -99,7 +99,8 @@ class CodeScanner {
      */
     static performZipScan({ zip_name, userId, path, scanTools}) {
         return new Promise((resolve, reject) => {
-            const zipPath= path.join(BASIC_UPLOADING_FOLDER_PATH, userId, '/projects')
+
+            const zipPath= path.join(BASIC_UPLOADING_FOLDER_PATH, userId, '/projects') //where zip file are saved
             const tmpDir = path.join(os.tmpdir(), Date.now().toString());
 
 

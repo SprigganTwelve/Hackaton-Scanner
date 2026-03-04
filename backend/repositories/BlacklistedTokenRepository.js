@@ -9,14 +9,14 @@ class BlacklistedTokenRepository {
      *
      * @param {Object} param0 
      * @param {string} param0.token - The still-valid JWT to store
-     * @param {Date}   param0.revoked_at - The time when the token considered expired
+     * @param {Date}   param0.expired_at - The time when the token considered expired
      * @returns {Promise<void>}
      */
-    static async save({ token, revoked_at }) {
+    static async save({ token, expired_at }) {
         await pool.query(
-            `INSERT INTO blacklisted_token (token, revoked_at)
+            `INSERT INTO blacklisted_token (token, expired_at)
              VALUES (?, ?)`,
-            [token, revoked_at]
+            [token, expired_at]
         );
     }
 
@@ -48,7 +48,7 @@ class BlacklistedTokenRepository {
     static async deleteMany({ userId }) {
         await pool.query(
             `DELETE FROM blacklisted_token 
-             WHERE user_id = ? AND revoked_at < ?`,
+             WHERE user_id = ? AND expired_at < ?`,
             [userId, new Date()]
         );
     }
