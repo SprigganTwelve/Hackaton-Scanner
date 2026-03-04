@@ -16,63 +16,68 @@ function buildUrl(path, query) {
 }
 
 async function request(path, options = {}) {
-  const {
-    method = "GET",
-    headers = {},
-    query,
-    body,
-    timeoutMs = 60000,
-  } = options;
+	const {
+		method = "GET",
+		headers = {},
+		query,
+		body,
+		timeoutMs = 60000,
+	} = options;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const finalHeaders = {
-    Accept: "application/json",
-    ...headers,
-  };
+	const finalHeaders = {
+		Accept: "application/json",
+		...headers,
+	};
 
-  let finalBody = body;
+	let finalBody = body;
 
-  const isFormData =
-    typeof FormData !== "undefined" && body instanceof FormData;
+	const isFormData =
+		typeof FormData !== "undefined" && body instanceof FormData;
 
-  if (
-    body &&
-    typeof body === "object" &&
-    !isFormData &&
-    !(body instanceof Blob)
-  ) {
-    finalHeaders["Content-Type"] = "application/json";
-    finalBody = JSON.stringify(body);
-  }
+	if (
+		body &&
+		typeof body === "object" &&
+		!isFormData &&
+		!(body instanceof Blob)
+	) {
+		finalHeaders["Content-Type"] = "application/json";
+		finalBody = JSON.stringify(body);
+	}
 
-  try {
-    const res = await fetch(buildUrl(path, query), {
-      method,
-      headers: finalHeaders,
-      body: method === "GET" || method === "HEAD" ? undefined : finalBody,
-      signal: controller.signal,
-    });
+  	const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+	if (token) {
+		finalHeaders.Authorization = `Bearer ${token}`;
+	}
 
-    const contentType = res.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
+	try {
+		const res = await fetch(buildUrl(path, query), {
+		method,
+		headers: finalHeaders,
+		body: method === "GET" || method === "HEAD" ? undefined : finalBody,
+		signal: controller.signal,
+		});
 
-    const data = isJson
-      ? await res.json().catch(() => null)
-      : await res.text().catch(() => null);
+		const contentType = res.headers.get("content-type") || "";
+		const isJson = contentType.includes("application/json");
 
-    if (!res.ok) {
-      const error = new Error(`HTTP ${res.status}`);
-      error.status = res.status;
-      error.data = data;
-      throw error;
-    }
+		const data = isJson
+		? await res.json().catch(() => null)
+		: await res.text().catch(() => null);
 
-    return data;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+		if (!res.ok) {
+		const error = new Error(`HTTP ${res.status}`);
+		error.status = res.status;
+		error.data = data;
+		throw error;
+		}
+
+		return data;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 export const api = {
