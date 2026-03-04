@@ -129,10 +129,6 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-
-        <button className="rp-topBtn" type="button">
-          Générer rapport
-        </button>
       </div>
 
       <div className="rp-card">

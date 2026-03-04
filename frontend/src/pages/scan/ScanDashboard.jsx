@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getScanSummary, listFindings } from "../../services/scans.services";
 import { useNavigate } from "react-router-dom";
+// import pour searchbar
+import { useOutletContext } from "react-router-dom";
 import "./ScanDashboard.css";
 
 import {
@@ -55,7 +57,7 @@ function DiagnosticsGauge({ summary }) {
   }, [summary]);
 
   // On prend OWASP sous 2 formats possibles:
-  // 1) tableau [{code,label,count}] (recommandé)
+  // 1) tableau [{code,label,count}]
   // 2) objet {A03: 6, A05: 7}
   const owaspList = useMemo(() => {
     const o = summary?.owasp;
@@ -81,7 +83,7 @@ function DiagnosticsGauge({ summary }) {
 
   const sumTop = useMemo(() => top4.reduce((acc, x) => acc + x.count, 0), [top4]);
 
-  // Data pour un demi-gauge : on prend "valeur" + "reste"
+  // Data pour un demi-gauge : on prend "valeur" + "reste" à modifier
   const gaugeData = useMemo(() => {
     const value = sumTop;
     const rest = Math.max(0, total - value);
@@ -299,7 +301,6 @@ export default function ScanDashboard() {
         <div className="ds-topbar__title">Dashboard</div>
         <div className="ds-topbar__actions">
           <button className="ds-topBtn ds-topBtn--primary" type="button" onClick={() => navigate("/new-scan")}>Nouveau Scan +</button>
-          <button className="ds-topBtn" type="button">Générer rapport</button>
         </div>
       </div>
 
