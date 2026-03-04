@@ -53,21 +53,21 @@ VALUES
 -- FINDINGS
 -- ==============================
 INSERT INTO finding 
-(score_penality, message, file_path, severity, code, tool_id, rule_id, analysis_record_id, fingerprint)
+(score_penality, file_path, severity, code, tool_id, rule_id, analysis_record_id, fingerprint)
 VALUES
-(2.0, 'hardcoded_secret', 'src/config.js', 'HIGH',
+(2.0, 'src/config.js', 'HIGH',
  'const API_KEY = "123456SECRET";',
  1, 1, 1, 'fp_001'),
 
-(3.0, 'sql_injection', 'src/db.js', 'CRITICAL',
+(3.0,  'src/db.js', 'CRITICAL',
  'db.query("SELECT * FROM users WHERE id = " + userId);',
  1, 2, 1, 'fp_002'),
 
-(1.5, 'insecure_random', 'utils/random.js', 'MEDIUM',
+(1.5,  'utils/random.js', 'MEDIUM',
  'Math.random()',
  2, 3, 2, 'fp_003'),
 
-(2.5, 'outdated_dependency', 'package.json', 'HIGH',
+(2.5, 'package.json', 'HIGH',
  '"lodash": "4.17.10"',
  3, 4, 2, 'fp_004');
 
