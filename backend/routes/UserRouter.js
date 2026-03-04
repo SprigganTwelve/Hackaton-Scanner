@@ -10,7 +10,6 @@ const multer = require('multer');
 const { checkUserAuthorization } = require('../middlewares/checkUserAuthorization');
 const UserController = require('../controllers/UserController');
 
-const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage});

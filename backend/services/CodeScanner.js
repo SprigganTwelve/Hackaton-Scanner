@@ -4,10 +4,18 @@ const unzipper = require('unzipper');
 const os = require('os');
 
 const path = require('path');
-const { exec } = require('child_process');
+const { execSync } = require('child_process');
 
+//Data Transfer object
+const ScanResult = require('./DTO/ScanResult')
+const MappedIssue = require('./DTO/MappedIssue')
+//Enums
+const CodeScannerTools = require('../enums/CodeScannerTool')
 
+//Utils
 const ScoreAnalizer = require('../utils/ScoreAnalizer');
+
+//config
 
 // const mappedOWASP = mapToOWASP2025(semgrepResults);
 // const securityScore = calculateSecurityScore(mappedOWASP);
@@ -16,10 +24,11 @@ const ScoreAnalizer = require('../utils/ScoreAnalizer');
 class CodeScanner {
 
     /**
-     * @param {string} repoUrl - represent the repo url to scan
-     * @param {Array<string>} scannTools - represent the list of tools to use for scanning (e.g. ['semgrep', 'eslint', 'npmAudit'])
+     * @param {Object} param0
+     * @param {string} param0.repoUrl - represent the repo url to scan
+     * @param {Array<string>} param0.scanTools - represent the list of tools to use for scanning (e.g. ['semgrep', 'eslint', 'npmAudit'])
      */
-    static performScan(repoUrl, scannTools) {
+    static performScan({repoUrl, scanTools}) {
         return new Promise((resolve, reject) => {
 
             let semgrepResults = null;
@@ -27,81 +36,131 @@ class CodeScanner {
             let auditResults = null;
             const tmpDir = path.join(os.tmpdir(), Date.now().toString());
 
-            //Get Semgrep result if selected
-            if(scannTools.includes('semgrep')){
-                exec(`git clone ${repoUrl} ${tmpDir}`, (err) => {
-                    //handle git clone error
-                    if (err)
-                        return reject(new Error(`Erreur lors du clonage du dépôt: ${err.message}`));
-                    exec(`semgrep --config=p/owasp-top10 ${tmpDir} --json`, (err, semgrepOut) => {
-                        //handle semgrep error
-                        if (err)
-                            return reject(new Error(`Erreur lors de l'exécution de Semgrep: ${err.message}`));
-                        semgrepResults = JSON.parse(semgrepOut)
-                    })
-                })
+            // SEMGREP
+            if (scanTools.includes(CodeScannerTools.SEMGREP)) {
+                const semgrepOut = execSync(
+                    `semgrep --config=p/owasp-top10 ${tmpDir} --json`,
+                    { encoding: 'utf8' }
+                );
+                semgrepResults = JSON.parse(semgrepOut);
             }
 
-            if(scannTools.includes('eslint'))
-            {
-                exec(`eslint --extensions .js ${tmpDir} -f json`, (err, eslintOut) => {
-                    if (err) 
-                        eslintOut = '[]'; 
-                    eslintResults = JSON.parse(eslintOut);
-                })
+            // ESLINT
+            if (scanTools.includes(CodeScannerTools.ESLINT)) {
+                try {
+                    const eslintOut = execSync(
+                        `eslint --extensions .js ${tmpDir} -f json`,
+                        { encoding: 'utf8' }
+                    );
+                    eslintResults = JSON.parse(eslintOut || '[]');
+                }
+                catch (err) {
+                    eslintResults = [];
+                }
             }
 
-            if(scannTools.includes('npmAudit'))
-            {
-                exec(`cd ${tmpDir} && npm audit --json`, (err, auditOut) => {
-                    if (err) auditOut = '{}';
+            // NPM AUDIT
+            if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
+                try {
+                    const auditOut = execSync(
+                        `cd ${tmpDir} && npm audit --json`,
+                        { encoding: 'utf8' }
+                    );
                     auditResults = JSON.parse(auditOut || '{}');
-                })
+                }
+                catch (err) {
+                    auditResults = {};
+                }
             }
 
-            resolve({
-                semgrepResults,
-                securityScore,
-                owasp: mappedOWASP,
-                eslint: eslintResults,
-                npmAudit: auditResults,
-                message: 'Scan completed successfully'
-            });
+            const mappedOWASP   = CodeScanner.mapOwasp(semgrepResults);
+            const securityScore = CodeScanner.calculateSecurityScore(mappedOWASP);
+
+            resolve(
+                new ScanResult({
+                    semgrepResults,
+                    securityScore ,
+                    owasp: mappedOWASP,
+                    eslint: eslintResults,
+                    npmAudit: auditResults,
+                    message: 'Scan completed successfully'
+                })
+            );
         });
 
     }
 
-    static performZipScan(zipPath) {
+    /**
+     * This function helps us perform scan on zip folder
+     * @param {Object} param0
+     * @param {string} param0.zip_name 
+     * @param {string} param0.userId    - the unique identifier of the user 
+     * @param {string[]} param0.scanTools - the tools used for scaning 
+     * @returns 
+     */
+    static performZipScan({ zip_name, userId, path, scanTools}) {
         return new Promise((resolve, reject) => {
+            const zipPath= path 
             const tmpDir = path.join(os.tmpdir(), Date.now().toString());
+
+            let semgrepResults = null;
+            let eslintResults = null;
+            let auditResults = null;
 
             fs.createReadStream(zipPath)
                 .pipe(unzipper.Extract({ path: tmpDir }))
                 .on('close', () => {
-                    exec(`semgrep --config=p/owasp-top10 ${tmpDir} --json`, (err, semgrepOut) => {
-                        if (err) return reject(new Error(`Erreur lors de l'exécution de Semgrep: ${err.message}`));
+                    //SEMGREP
+                    if (scanTools.includes(CodeScannerTools.SEMGREP)) {
+                        const semgrepOut = execSync(
+                            `semgrep --config=p/owasp-top10 ${tmpDir} --json`,
+                            { encoding: 'utf8' }
+                        );
+                        semgrepResults = JSON.parse(semgrepOut);
+                    }
 
-                        const semgrepResults = JSON.parse(semgrepOut);
+                    //ESLINT
+                    if (scanTools.includes(CodeScannerTools.ESLINT)) {
+                        try {
+                            const eslintOut = execSync(
+                                `eslint --extensions .js ${tmpDir} -f json`,
+                                { encoding: 'utf8' }
+                            );
+                            eslintResults = JSON.parse(eslintOut || '[]');
+                        } catch (err) {
+                            // ESLint retourne souvent code 1 si erreurs trouvées
+                            eslintResults = [];
+                        }
+                    }
+                    
 
-                        exec(`eslint --extensions .js ${tmpDir} -f json`, (err, eslintOut) => {
-                            if (err) eslintOut = '[]';
-
-                            const eslintResults = JSON.parse(eslintOut || '[]');
-
-                            exec(`cd ${tmpDir} && npm audit --json`, (err, auditOut) => {
-                                if (err) auditOut = '{}';
-
-                                const auditResults = JSON.parse(auditOut || '{}');
-
-                                resolve({
-                                    securityScore,
-                                    owasp: mappedOWASP,
-                                    eslint: eslintResults,
-                                    npmAudit: auditResults
-                                });
-                            });
-                        });
-                    });
+                    // NPM AUDIT
+                    if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
+                        try {
+                            const auditOut = execSync(
+                                `npm audit --json`,
+                                { cwd: tmpDir, encoding: 'utf8' }
+                            );
+                            auditResults = JSON.parse(auditOut || '{}');
+                        } catch (err) {
+                            // npm audit retourne souvent code != 0 si vulnérabilités
+                            auditResults = err.stdout
+                                ? JSON.parse(err.stdout)
+                                : {};
+                        }
+                    }
+  
+                    const mappedOWASP = CodeScanner.mapOwasp(semgrepResults);
+                    const securityScore = CodeScanner.calculateSecurityScore(mappedOWASP);
+                    
+                    resolve(
+                        new ScanResult({
+                            securityScore,
+                            owasp: mappedOWASP,
+                            eslint: eslintResults,
+                            npmAudit: auditResults
+                        })
+                    );
                 })
                 .on('error', reject);
         });
@@ -110,6 +169,10 @@ class CodeScanner {
     /**
      * Classify semgrep results into OWASP categories based on the metadata tags provided by semgrep rules.
      * @param {Object} semgrepResults - The raw results from semgrep scan.arguments
+     * @returns {{
+     *      start_line: number,
+     *      end_line?: number
+     * }[]}
      */
     static mapOwasp(semgrepResults) {
         const categories = {
@@ -125,21 +188,32 @@ class CodeScanner {
             A10_Mishandling_Of_Exceptional_onditions: []
         };
 
-        if (!semgrepResults.results)
+        if (!semgrepResults?.results)
             return categories;
 
         semgrepResults.results.forEach(issue => {
 
             const owaspTag = issue.extra.metadata?.owasp;
+            const {
+                check_id,
+                path: file_path,
+                start: { line: start_index } = {},
+                end: { line: end_index } = {},
+                extra: { message, severity = 'LOW', lines: code = [] , metadata } = {},
+            } = issue;
 
-            const mappedIssue = {
-                file: issue.path,
-                line: issue.start?.line,
-                message: issue.extra?.message,
-                severity: issue.extra?.severity
-            };
+            const mappedIssue = new MappedIssue({
+                check_id,
+                file_path,
+                start_index,
+                code: code.join('\n'),
+                end_index, 
+                message: message,
+                severity: severity
+            });
 
-            if(!owaspTag) return;
+            if(!owaspTag)
+                return;
 
             if (owaspTag.includes("A01")) 
                 categories.A01_Broken_Access_Control.push(mappedIssue);
@@ -186,12 +260,11 @@ class CodeScanner {
         Object.values(mappedOWASP).forEach(category => {
             category.forEach(issue => {
                 const sev = issue.severity?.toUpperCase() || "LOW";
-                score = ScoreAnalizer.calculateScore(score, sev)
+                score = ScoreAnalizer.calculateScorePoints(score, sev)
             });
         });
         return score < 0 ? 0 : score;
    }
-
 
 }
 

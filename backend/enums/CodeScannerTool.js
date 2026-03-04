@@ -1,4 +1,7 @@
 
+/**
+ * Enum representing the different code scanning tools supported by the application.
+ */
 class CodeScannerTool {
     static SEMGREP = 'semgrep';
     static NPM_AUDIT = 'npmAudit';

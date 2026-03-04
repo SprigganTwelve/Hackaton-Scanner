@@ -1,3 +1,4 @@
+
 class LineInfo {
     constructor(start_index, end_index) {
         this.start_index = new Number(start_index);

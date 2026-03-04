@@ -17,10 +17,10 @@ CREATE TABLE account(
 -- Represent a project upload by an user
 CREATE TABLE project(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL,         -- can represent the name of the cloned repository or an original name of the uploaded zip file
+   name VARCHAR(250) NOT NULL,                  -- can represent the name of the cloned repository or an original name of the uploaded zip file
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   url VARCHAR(250) NOT NULL,  -- represents the url of the project (ex: git repository url)
-   is_uploaded TINYINT(1) NOT NULL DEFAULT 0, -- indicates if the project was uploaded as a zip file or not
+   url VARCHAR(250) NOT NULL,                   -- can represent the url of the git project (ex: git repository url) or the local path
+   is_uploaded TINYINT(1) NOT NULL DEFAULT 0,   -- indicates if the project was uploaded as a zip file or not
 
    account_id VARCHAR(250) NOT NULL,
    FOREIGN KEY(account_id) REFERENCES account(id)
@@ -95,13 +95,10 @@ CREATE TABLE report(
 CREATE TABLE finding(
    id INT AUTO_INCREMENT PRIMARY KEY,
 
-   score_penality DECIMAL(3,1) NOT NULL,
-   pattern_type VARCHAR(250) NOT NULL,       -- represents the type of the error (ex: hardcoded password, secret key, etc.)
    file_path VARCHAR(250) NOT NULL,          -- represents the path of the file where the error is located
    
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
    code TEXT NOT NULL,                         -- represents the code snippet where the error is located
-
 
    tools_id INT NOT NULL,
    rule_id INT NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
