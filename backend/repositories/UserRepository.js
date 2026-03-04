@@ -1,5 +1,5 @@
 
-const pool = require('../config/database')
+const pool = require('../config/database');
 const UserProfile = require('./DTO/User.profile');
 const UserProject = require('./DTO/User.project');
 const AnalysisFinding = require('./DTO/AnalysisFinding');
