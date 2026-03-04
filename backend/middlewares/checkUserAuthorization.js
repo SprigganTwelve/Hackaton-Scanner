@@ -2,9 +2,14 @@
 
 const jwt = require('jsonwebtoken')
 
+//Value Objects
+const AuthJwtPayload = require('../utils/AuthJwtPayload')
+
 //Services
 const getJwtSecret = require('../config/jwtSecret')
 const BlacklistedTokenRepository = require('../repositories/BlacklistedTokenRepository')
+
+
 
 /**
  * Middleware that validates whether the authenticated user
@@ -34,15 +39,27 @@ exports.checkUserAuthorization = async(req, res, next)=>{
             }).status(401)
         }
         
-        const decoded = jwt.verify(token, getJwtSecret())
+        //Access token decoding & validation
+        let decoded;
+        try{
+            decoded = jwt.verify(token, getJwtSecret())
+        }
+        catch (error) {
+            return res.json({
+                message: 'Token invalide'
+            }).status(401)
+        }
 
         //Token decoding & get to next step
-        req.user = decoded
+        /*** @var user  AuthJwtPayload */
+        req.user = new AuthJwtPayload({ sub: decoded.sub, issue_at: decoded.issue_at });
         return next()
     }
     catch (error)
     {
         console.log("Something went wrong")
-        return res.json({message: 'Une erreur inattendue est survenue lors de la vérification de l\'accès'})
+        return res.json({
+            message: 'Une erreur inattendue est survenue lors de la vérification de l\'accès'
+        }).status(500)
     }
 }
