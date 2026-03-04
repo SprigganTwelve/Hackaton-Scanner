@@ -5,18 +5,22 @@ class Finding {
     /**
      * Represents a security finding detected in a scanned file.
      * @param {Object} params - The parameters for creating a Finding instance.
-     * @param {string} params.pattern_type - The type of pattern that was matched (e.g., "regex", "keyword").
+     * @param {string} params.message - The type of pattern that was matched (e.g., "regex", "keyword").
      * @param {string} params.file_path - The relative path of the file that was scanned.
      * @param {string} params.severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
      * @param {string} params.code - The code snippet where the finding was detected.
      * @param {string} params.owaspVulnerabilityError - The OWASP vulnerability category associated with this finding (e.g., "A01_Broken_Access_Control").
      * */
     constructor({ 
-        pattern_type,
+        message,
         file_path,
         severity,
         code,
-        owaspVulnerabilityError
+        tool_id,
+        rule_id,
+        fingerprint,
+        analysis_record_id,
+        owaspVulnerabilityError,
     })
     {
         this.pattern_type = pattern_type;
