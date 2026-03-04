@@ -34,10 +34,7 @@ exports.login = async (req, res) => {
         await BlacklistedTokenRepository.deleteMany({ userId })
 
         //JWT-Security validation
-        const playload = {
-            sub: credentials,
-            issue_at: Date.now(),
-        }
+        const playload = AuthJwtPayload({sub: userId})
 
         const token = jwt.sign(
             playload, 
@@ -73,17 +70,35 @@ exports.login = async (req, res) => {
 exports.register = async (req, res)=>{
     try{
         //Data Validation
-        const { name, email, password, git_url, access_token } = req.body;
-        if(!email || !password)
-            return res.json({message: "Le champ email ou password est manquant"}).status(400)
+        const { 
+            name,
+            email,
+            password,
+            git_url,
+            hash_git_access_token
+        } = req.body;
 
-        if(git_url.trim() && !git_url.startWith('https://github.com/'))
+        if(!email || !password)
+            return res.json({message: "Les champs email et password sont requis"}).status(400)
+
+        if(git_url.trim() && !git_url.startsWith('https://github.com/'))
         {
-            return res.json({message: 'S\'il vous plaît, veuillez saisir une url git valide'})
+            return res.json({
+                message: 'S\'il vous plaît, veuillez saisir une url github valide'
+            })
         }
 
-        const user = await AuthRepository.save({name, email, password, git_url, access_token})
-        return res.json({ message: "Opération exécuté avec succès" }).status(200)
+        const user = await AuthRepository.save({
+            name, 
+            email,
+            password,
+            git_url,
+            hash_git_access_token: hash_git_access_token || null
+        })
+        return res.json({
+            user,
+            message: "Opération exécuté avec succès"
+        }).status(200)
     }
     catch(error)
     {
@@ -98,7 +113,7 @@ exports.logout = async (req, res)=>{
         //Data Validation
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith("Bearer ")) {
-        return res.status(401).json({ message: "Token manquant ou mal formé" });
+            return res.status(401).json({ message: "Token manquant ou mal formé" });
         }
 
         const token = authHeader.replace("Bearer ", "");
