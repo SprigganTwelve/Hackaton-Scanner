@@ -11,7 +11,7 @@ const reportController = require('../controllers/reportController');
 const CorrectionController = require('../controllers/CorrectionController');
 const { checkUserAuthorization } = require('../middlewares/checkUserAuthorization');
 const UserController = require('../controllers/UserController');
-
+const ReportController = require('../controllers/ReportController');
 
 
 const storage = multer.memoryStorage()
@@ -31,5 +31,6 @@ router.get('/finding/:findingId/preview', checkUserAuthorization, CorrectionCont
 router.post('/finding/:findingId/apply', checkUserAuthorization, CorrectionController.applyCorrection);
 router.post('/finding/:findingId/reject', checkUserAuthorization, CorrectionController.rejectCorrection);
 
+router.post('/analysis/:analysisId/report', checkUserAuthorization, ReportController.generateReport);
 
 module.exports = router;

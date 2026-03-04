@@ -49,6 +49,7 @@ CREATE TABLE rule(
    description TEXT ,                   -- represents the description of the rule
    name VARCHAR(250) NOT NULL,                  -- represents the name of the rule
 
+
    owasp_category_id INT NOT NULL,              -- represents the OWASP category of the rule
    
    FOREIGN KEY(owasp_category_id) REFERENCES owasp_category(id)
