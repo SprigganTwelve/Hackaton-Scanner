@@ -32,18 +32,26 @@ class AuthRepository {
      * @param {string} password
      * @param {string} name
      * @param {string} git_url
-     * @param {string} access_token
+     * @param {string} hash_git_access_token
      * @returns {Promise<Object>} The saved user data
      */
-    static async save({ email, password, git_url, access_token, name }) {
+    static async save({ 
+        email, password, git_url, 
+        hash_git_access_token, name 
+    }) {
         const [result] = await pool.query(
-            `INSERT INTO account (email, password, name, git_url, access_token)
+            `INSERT INTO account (email, password, name, git_url, hash_git_access_token)
              VALUES (?, ?, ?, ?, ?)`,
-            [email, password, name, git_url, access_token]
+            [email, password, name, git_url, hash_git_access_token]
         );
 
         // result.insertId contient l'ID généré par MySQL
-        return { id: result.insertId, email, password, name, git_url, access_token };
+        return { 
+            id: result.insertId,
+            email, password,
+            name, git_url,
+            hash_git_access_token
+        };
     }
 }
 

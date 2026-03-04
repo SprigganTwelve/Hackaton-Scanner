@@ -7,7 +7,11 @@ class CodeScannerTool {
     /**
      * @param {string[]} tools - An array of tool names to check for existence.
      */
-    async assertScanToolsExistence(tools) {
-
+    isValidTool(tool) {
+        return [
+            CodeScannerTool.SEMGREP,
+            CodeScannerTool.NPM_AUDIT,
+            CodeScannerTool.ESLINT
+        ].includes(tool);
     }
 }

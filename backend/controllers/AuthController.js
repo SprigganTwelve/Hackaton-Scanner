@@ -34,10 +34,7 @@ exports.login = async (req, res) => {
         await BlacklistedTokenRepository.deleteMany({ userId })
 
         //JWT-Security validation
-        const playload = {
-            sub: credentials,
-            issue_at: Date.now(),
-        }
+        const playload = AuthJwtPayload({sub: userId, issue_at: Date.now()})
 
         const token = jwt.sign(
             playload, 
@@ -73,17 +70,34 @@ exports.login = async (req, res) => {
 exports.register = async (req, res)=>{
     try{
         //Data Validation
-        const { name, email, password, git_url, access_token } = req.body;
+        const { 
+            name,
+            email,
+            password,
+            git_url,
+            hash_git_access_token
+        } = req.body;
+
         if(!email || !password)
             return res.json({message: "Le champ email ou password est manquant"}).status(400)
 
         if(git_url.trim() && !git_url.startWith('https://github.com/'))
         {
-            return res.json({message: 'S\'il vous plaît, veuillez saisir une url git valide'})
+            return res.json({
+                message: 'S\'il vous plaît, veuillez saisir une url git valide'
+            })
         }
 
-        const user = await AuthRepository.save({name, email, password, git_url, access_token})
-        return res.json({ message: "Opération exécuté avec succès" }).status(200)
+        const user = await AuthRepository.save({
+            name, 
+            email,
+            password,
+            git_url,
+            hash_git_access_token: hash_git_access_token || null
+        })
+        return res.json({ 
+            message: "Opération exécuté avec succès"
+        }).status(200)
     }
     catch(error)
     {

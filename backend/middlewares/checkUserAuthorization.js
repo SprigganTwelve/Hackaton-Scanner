@@ -2,9 +2,14 @@
 
 const jwt = require('jsonwebtoken')
 
+//Value Objects
+const AuthJwtPayload = require('../utils/AuthJwtPayload')
+
 //Services
 const getJwtSecret = require('../config/jwtSecret')
 const BlacklistedTokenRepository = require('../repositories/BlacklistedTokenRepository')
+
+
 
 /**
  * Middleware that validates whether the authenticated user
@@ -37,7 +42,8 @@ exports.checkUserAuthorization = async(req, res, next)=>{
         const decoded = jwt.verify(token, getJwtSecret())
 
         //Token decoding & get to next step
-        req.user = decoded
+        /*** @var user  AuthJwtPayload */
+        req.user = new AuthJwtPayload({ sub: decoded.sub, issue_at: decoded.issue_at });
         return next()
     }
     catch (error)

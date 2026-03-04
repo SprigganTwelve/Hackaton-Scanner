@@ -6,8 +6,12 @@ const os = require('os');
 const path = require('path');
 const { exec } = require('child_process');
 
-const mappedOWASP = mapToOWASP2025(semgrepResults);
-const securityScore = calculateSecurityScore(mappedOWASP);
+
+const ScoreAnalizer = require('../utils/ScoreAnalizer');
+
+// const mappedOWASP = mapToOWASP2025(semgrepResults);
+// const securityScore = calculateSecurityScore(mappedOWASP);
+
 
 class CodeScanner {
 
@@ -54,6 +58,7 @@ class CodeScanner {
             }
 
             resolve({
+                semgrepResults,
                 securityScore,
                 owasp: mappedOWASP,
                 eslint: eslintResults,
@@ -62,7 +67,7 @@ class CodeScanner {
             });
         });
 
-}
+    }
 
     static performZipScan(zipPath) {
         return new Promise((resolve, reject) => {
@@ -134,16 +139,34 @@ class CodeScanner {
 
             if(!owaspTag) return;
 
-            if (owaspTag.includes("A01")) categories.A01_Broken_Access_Control.push(mappedIssue);
-            else if (owaspTag.includes("A02")) categories.A02_Cryptographic_Failures.push(mappedIssue);
-            else if (owaspTag.includes("A03")) categories.A03_Injection.push(mappedIssue);
-            else if (owaspTag.includes("A04")) categories.A04_Insecure_Design.push(mappedIssue);
-            else if (owaspTag.includes("A05")) categories.A05_Security_Misconfiguration.push(mappedIssue);
-            else if (owaspTag.includes("A06")) categories.A06_Vulnerable_Components.push(mappedIssue);
-            else if (owaspTag.includes("A07")) categories.A07_Auth_Failures.push(mappedIssue);
-            else if (owaspTag.includes("A08")) categories.A08_Data_Integrity_Failures.push(mappedIssue);
-            else if (owaspTag.includes("A09")) categories.A09_Logging_Failures.push(mappedIssue);
-            else if (owaspTag.includes("A10")) categories.A10_SSRF.push(mappedIssue);
+            if (owaspTag.includes("A01")) 
+                categories.A01_Broken_Access_Control.push(mappedIssue);
+
+            else if (owaspTag.includes("A02")) 
+                categories.A02_Cryptographic_Failures.push(mappedIssue);
+            else if (owaspTag.includes("A03")) 
+                categories.A03_Injection.push(mappedIssue);
+            
+            else if (owaspTag.includes("A04")) 
+                categories.A04_Insecure_Design.push(mappedIssue);
+
+            else if (owaspTag.includes("A05")) 
+                categories.A05_Security_Misconfiguration.push(mappedIssue);
+
+            else if (owaspTag.includes("A06")) 
+                categories.A06_Vulnerable_Components.push(mappedIssue);
+
+            else if (owaspTag.includes("A07")) 
+                categories.A07_Auth_Failures.push(mappedIssue);
+
+            else if (owaspTag.includes("A08")) 
+                categories.A08_Data_Integrity_Failures.push(mappedIssue);
+
+            else if (owaspTag.includes("A09")) 
+                categories.A09_Logging_Failures.push(mappedIssue);
+
+            else if (owaspTag.includes("A10")) 
+                categories.A10_SSRF.push(mappedIssue);
 
         });
 
@@ -152,23 +175,18 @@ class CodeScanner {
     }
 
     /**
-     * 
+     * This function calculates a security score for the
+     * @param {Object} mappedOWASP - The categorized OWASP findings from the mapOwasp function.
      */
     static calculateSecurityScore(mappedOWASP) {
         let score = 100;
 
         Object.values(mappedOWASP).forEach(category => {
             category.forEach(issue => {
-
                 const sev = issue.severity?.toUpperCase() || "LOW";
-
-                if (sev === "CRITICAL") score -= 30;
-                else if (sev === "ERROR" || sev === "HIGH") score -= 20;
-                else if (sev === "WARNING" || sev === "MEDIUM" || sev === "MODERATE") score -= 10;
-                else score -= 5;
+                score = ScoreAnalizer.calculateScore(score, sev)
             });
         });
-
         return score < 0 ? 0 : score;
    }
 
