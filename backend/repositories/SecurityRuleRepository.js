@@ -1,7 +1,7 @@
 
 const pool = require('../config/database/mysql.client')
 
-class RuleRepository
+class SecurityRuleRepository
 {
     /**
      * Create or find a rule
@@ -19,15 +19,16 @@ class RuleRepository
 
         if(rows && rows.length > 0)
         {
-            return {id: rows[0].insertId}
+            return { id: rows[0].insertId }
         }
 
         const [result] = await pool.query(
             'INSERT INTO rule(check_id, description, owasp_category_id) VALUES(?,?,?)',
             [check_id, description, owasp_category_id]
         )
+
         return { id: result[0].insertId }
     }
 }
 
-module.exports = RuleRepository
+module.exports = SecurityRuleRepository

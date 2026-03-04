@@ -11,13 +11,14 @@ CREATE TABLE account(
    email VARCHAR(250) UNIQUE NOT NULL,
    password VARCHAR(255) NOT NULL,
    git_url VARCHAR(350),
-   hash_git_access_token VARCHAR(250)     -- represent a PAT(Personal Access Token) that is used to access the user's git repository, it is hashed for security reasons
+   git_access_token VARCHAR(250)     -- represent a PAT(Personal Access Token) that is used to access the user's git repository, it is hashed for security reasons
 );
 
 -- Represent a project upload by an user
 CREATE TABLE project(
    id INT AUTO_INCREMENT PRIMARY KEY,
    name VARCHAR(250) NOT NULL,                  -- can represent the name of the cloned repository or an original name of the uploaded zip file
+   original_name VARCHAR(250) DEFAULT NULL,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    url VARCHAR(250) NOT NULL,                   -- can represent the url of the git project (ex: git repository url) or the local path
    is_uploaded TINYINT(1) NOT NULL DEFAULT 0,   -- indicates if the project was uploaded as a zip file or not
@@ -29,14 +30,14 @@ CREATE TABLE project(
 -- Represent the OWASP category of a finding (e.g. Injection, Broken Authentication, etc.)
 CREATE TABLE owasp_category(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL
+   name VARCHAR(250) NOT NULL UNQIUE,
 );
 
 
 -- Existing used tools for scanning
 CREATE TABLE tools(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL
+   name VARCHAR(250) NOT NULL UNIQUE
 );
 
 
@@ -44,8 +45,8 @@ CREATE TABLE tools(
 CREATE TABLE rule(
    id INT AUTO_INCREMENT PRIMARY KEY,
    
-   check_id VARCHAR(250) NOT NULL UNIQUE,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
-   description TEXT NOT NULL,                   -- represents the description of the rule
+   check_id VARCHAR(250) NOT NULL UNIQUE,       -- or ruleId, represnts the unique error identifier in the sys         -- represents the rule that was violated (ex: AWS Hardcoded Password)
+   description TEXT ,                   -- represents the description of the rule
    name VARCHAR(250) NOT NULL,                  -- represents the name of the rule
 
 
@@ -102,7 +103,7 @@ CREATE TABLE finding(
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
    code TEXT NOT NULL,                         -- represents the code snippet where the error is located
 
-   tool_id INT NOT NULL,
+   tool_id INT DEFAULT NULL,
    rule_id INT NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
    analysis_record_id INT NOT NULL,
 
