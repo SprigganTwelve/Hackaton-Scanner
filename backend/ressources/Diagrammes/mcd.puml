@@ -1,0 +1,101 @@
+@startuml
+!define ENTITY(name) class name << (E,#ADD8E6) >>
+
+
+ENTITY(Account) {
+  id
+  name
+  email
+  password
+  git_url
+  git_access_token
+}
+
+ENTITY(Project) {
+  id
+  name
+  original_name
+  created_at
+  url
+  is_uploaded
+}
+
+ENTITY(Analysis_Record) {
+  id
+  score
+  started_at
+  status
+}
+
+ENTITY(Tools) {
+  id
+  name
+}
+
+ENTITY(Analysis_Tools) {
+  
+}
+
+ENTITY(Rule) {
+  id
+  name
+  description
+}
+
+ENTITY(OWASP_Category) {
+  id
+  name
+}
+
+ENTITY(Finding) {
+  id
+  file_path
+  severity
+  code
+  fingerprint
+  is_corrected
+}
+
+ENTITY(Line_Info) {
+  id
+  start_index
+  end_index
+}
+
+ENTITY(Solution) {
+  id
+  corrective_measure
+}
+
+ENTITY(Report) {
+  id
+  format
+  created_at
+  path
+  original_name
+}
+
+ENTITY(Blacklisted_Token) {
+  id
+  hash_token
+  epired_at
+  issue_at
+}
+
+
+Account -- Project
+Project -- Analysis_Record
+
+Analysis_Record -- Analysis_Tools
+Analysis_Tools -- Tools
+
+Analysis_Record -- Finding
+Finding -- Tools
+Finding -- Rule
+Rule -- OWASP_Category
+Finding -- Line_Info
+Finding -- Solution
+Analysis_Record -- Report
+Account -- Blacklisted_Token
+
+@enduml

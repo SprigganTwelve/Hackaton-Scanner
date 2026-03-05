@@ -1,0 +1,36 @@
+@startuml
+left to right direction
+ 
+actor "Développeur" as dev
+actor "Administrateur" as admin
+actor "API Git" as git
+ 
+rectangle SecureScan {
+ 
+  usecase (Soumettre projet Git) as soumettre
+  usecase (Lancer analyse de sécurité) as analyser
+  usecase (Consulter résultats) as consulter
+  usecase (Appliquer corrections) as corriger
+  usecase (Générer rapport de sécurité) as rapport
+ 
+ 
+  usecase (Créer branche de correction) as branche
+  usecase (Push via API Git) as push
+}
+ 
+dev --> soumettre
+dev --> analyser
+dev --> consulter
+dev --> corriger
+dev --> rapport
+ 
+admin --> consulter
+admin --> rapport
+ 
+git --> branche
+git --> push
+ 
+corriger -right-> branche : extende
+corriger -right-> push : extende
+ 
+@enduml

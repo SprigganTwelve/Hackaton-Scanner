@@ -1,0 +1,38 @@
+@startuml
+
+start
+
+:Créer un projet;
+
+if (Projet créé ?) then (oui)
+    :Lancer une analyse;
+else (non)
+    stop
+endif
+
+:Analyse en cours;
+
+:Générer les résultats (findings);
+
+if (Findings trouvés ?) then (oui)
+
+    :Afficher findings;
+    :Proposer corrections;
+
+    if (Corrections validées ?) then (oui)
+        :Appliquer corrections;
+    else (non)
+        :Conserver findings;
+    endif
+
+endif
+
+:Mettre à jour le statut;
+
+:Générer le rapport;
+
+:Télécharger le rapport;
+
+stop
+
+@enduml

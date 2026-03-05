@@ -1,0 +1,98 @@
+@startuml
+
+class User {
+    + id : INT
+    + name : String
+    + email : String
+    + password : String
+    + git_url : String
+    + git_access_token : String
+}
+
+class Project {
+    + id : INT
+    + name : String
+    + original_name : String
+    + created_at : Datetime
+    + url : String
+    + is_uploaded : Tinyint
+}
+
+class OwaspCategory {
+    + id : INT
+    + name : String
+}
+
+class Tools {
+    + id : INT
+    + name : String
+}
+
+class Rule {
+    + id : INT
+    + check_id : String
+    + name : String
+    + description : String
+}
+
+class AnalysisRecord {
+    + id : INT
+    + score : ENUM('A','B','C','D')
+    + started_at : String
+    + status : ENUM('PENDING','RUNNING','COMPLETED','FAILED')
+}
+
+class AnalysisTools {
+    + analysis_record_id : INT
+    + tool_id : INT
+}
+
+class Report {
+    + id : INT
+    + format : String
+    + path : String
+    + original_name : String
+    + created_at: Datetime
+}
+
+class Finding {
+    + id : INT
+    + file_path : String
+    + is_corrected : Tinyint
+    + severity : ENUM('LOW','MEDIUM','HIGH','CRITICAL')
+    + code : String
+    + fingerprint : String
+}
+
+class LineInfo {
+    + id : INT
+    + start_index : INT
+    + end_index : INT
+}
+
+class Solution {
+    + id : INT
+    + corrective_measure : String
+}
+
+class BlacklistedToken {
+    + id : INT
+    + hash_token : String
+    + expired_at : Datetime
+    + issue_at : Datetime
+}
+
+
+User "1" -- "0..*" Project : owns
+Project "1" -- "0..*" AnalysisRecord : has
+AnalysisRecord "1" -- "0..*" Finding : contains
+Finding "1" -- "0..1" Solution : has
+Finding "1" -- "0..*" LineInfo : details
+Rule "1" -- "0..*" Finding : violated
+OwaspCategory "1" -- "0..*" Rule : contains
+AnalysisRecord "1" -- "0..*" AnalysisTools : uses
+Tools "1" -- "0..*" AnalysisTools : used_in
+AnalysisRecord "1" -- "0..1" Report : generates
+User "1" -- "0..*" BlacklistedToken : owns
+
+@enduml

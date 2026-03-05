@@ -1,0 +1,111 @@
+@startuml
+
+actor User
+
+participant "Projet" as Projet
+participant "Analyse" as Analyse
+participant "Scanner Engine" as Scanner
+participant "Semgrep" as Semgrep
+participant "ESLint" as ESLint
+participant "npmAudit" as NpmAudit
+participant "Findings" as Findings
+participant "PropositionCorrection" as Correction
+participant "Rapport" as Rapport
+database "BDD" as BDD
+
+
+== Création du projet ==
+
+User -> Projet: create()
+activate Projet
+
+Projet -> BDD: saveProject()
+activate BDD
+BDD --> Projet: project saved
+deactivate BDD
+
+Projet --> User: project created
+deactivate Projet
+
+
+== Lancement de l'analyse ==
+
+User -> Analyse: start(projet)
+activate Analyse
+
+Analyse -> BDD: loadProject()
+activate BDD
+BDD --> Analyse: project loaded
+deactivate BDD
+
+Analyse -> Scanner: start scan
+activate Scanner
+
+Scanner -> Semgrep: scan code
+Semgrep --> Scanner: results
+
+Scanner -> ESLint: analyse JS
+ESLint --> Scanner: results
+
+Scanner -> NpmAudit: check dependencies
+NpmAudit --> Scanner: vulnerabilities
+
+Scanner -> Findings: generate findings
+deactivate Scanner
+
+
+== Stockage des résultats ==
+
+activate Findings
+Findings -> BDD: saveFindings()
+activate BDD
+BDD --> Findings: findings stored
+deactivate BDD
+
+Findings --> User: findings generated
+deactivate Findings
+
+
+== Proposition de correction ==
+
+User -> Correction: request suggestions
+activate Correction
+
+Correction -> BDD: saveProposition()
+activate BDD
+BDD --> Correction: proposition saved
+deactivate BDD
+
+Correction --> User: suggestions available
+
+
+User -> Correction: approve / reject
+Correction -> BDD: updateStatus()
+activate BDD
+BDD --> Correction: status updated
+deactivate BDD
+
+Correction --> User: decision saved
+deactivate Correction
+
+
+== Génération du rapport ==
+
+User -> Rapport: generate()
+activate Rapport
+
+Rapport -> BDD: loadFindings()
+activate BDD
+BDD --> Rapport: findings loaded
+deactivate BDD
+
+Rapport --> User: report generated
+
+
+User -> Rapport: download()
+Rapport --> User: report file
+
+deactivate Rapport
+deactivate Analyse
+
+@enduml
