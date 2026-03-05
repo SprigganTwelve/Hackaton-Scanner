@@ -101,6 +101,7 @@ exports.addProjectWithZip = async (req, res) => {
         //Data validation
         /** @var {AuthPlayload} authPayload */
         const authPayload = req.user;
+        const file = req.file;
         
         // console.log("Fichier Zip uploaded: ", file)
         if (!file || !file.originalname.endsWith('.zip'))
@@ -123,8 +124,6 @@ exports.addProjectWithZip = async (req, res) => {
                     url: userProjectPath ,
                     is_uploaded: true
                 })
-
-                console.log('USER PROJECT---', userProject)
 
                 if(alreadyExists)
                 {
@@ -176,13 +175,13 @@ exports.addProjectWithZip = async (req, res) => {
  */
 exports.scanRepo = async (req, res) => {
     //Data validation
-    const {projectId, repoUrl, scanTools } = req.body;
+    const { projectId, repoUrl, scanTools } = req.body;
 
     if (!repoUrl) {
         return res.status(400).json({ success: false, message: 'repoUrl manquant' });
     }
 
-    if(!Array.isArray(scanTools) || scanTools.length > 0){
+    if(!Array.isArray(scanTools) || scanTools.length === 0){
         return res.status(400).json({ 
             success: false,
             message: 'scanTools ne doit pas être vide'
@@ -193,11 +192,11 @@ exports.scanRepo = async (req, res) => {
     if(!scanTools.every(tool => CodeScannerTool.isValidTool(tool))){
         return res.status(400).json({ 
             success: false,
-            message: 'scannTools contient des outils de scan invalides. Les outils valides sont : semgrep, eslint, npmAudit'
+            message: 'scanTools contient des outils de scan invalides. Les outils valides sont : semgrep, eslint, npmAudit'
         });
     }
 
-        /** @var {AuthJwtPayload} user */
+    /** @var {AuthJwtPayload} user */
     const user = req.user;
 
     // -- Project existence validation
@@ -240,7 +239,7 @@ exports.scanRepo = async (req, res) => {
     }
     catch (error) {
         console.error('Erreur lors du scan:', error);
-        return res.status(500).json({ success: false, message: error?.message });
+        return res.status(500).json({ success: false, message: "Action échoué" });
     }
 };
 
@@ -252,6 +251,8 @@ exports.scanZip = async (req, res) => {
 
     //Data validation
     const { projectId, scanTools } = req.body;
+
+    console.log({projectId, scanTools})
 
     if(!Array.isArray(scanTools) || scanTools.length > 0){
         return res.status(400).json({ 

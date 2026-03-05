@@ -348,7 +348,7 @@ export default function ScanDashboard() {
 
     const projectId = searchParams.get('projectId') ?? selectedProjectId?.trim();
     const foundProject = projects.find(p => String(p.projectId) === String(projectId)) ?? projects[projects.length - 1];
-    
+    console.log("-----CURRENT PROJECT-------------", foundProject)
     setCurrentProject(foundProject);
   }, [projects, searchParams, selectedProjectId]);
 
@@ -376,21 +376,26 @@ export default function ScanDashboard() {
   // --- Scan ---
   useEffect(() => {
     async function makeScan() {
-      if (!scanning || !currentProject?.projectId) return;
+      if (!scanning || !currentProject?.projectId)
+        return;
 
+      console.log("-----SCAN STRATED ....")
       try {
-        const { results } = await scan(
-          currentProject.projectId,
-          currentProject.url,
-          currentProject.isUploaded
-        );
+        const { results } = await scan({
+          projectId: currentProject.projectId,
+          repoUrl: currentProject.url,
+          isZip: currentProject.isUploaded
+        });
         setScanResult(results);
       }
       catch (e) {
         setErr(e);
-      } finally {
+      }
+      finally {
         setScanning(false);
       }
+      console.log("-------SCAN ENDED ....")
+
     }
     makeScan();
   }, [scanning, currentProject]);

@@ -131,6 +131,7 @@ export default function NewScanPage() {
       alert(result?.message || "Projet créé !")
       console.log("ADD PROJECT - new: ", result.data)
       console.log("ADD PROJECT - RESULT: ", result)
+      
       setProjects(projects => ([...projects, result.data]))
 
 	    const projectId  = result.data.projectId

@@ -7,6 +7,7 @@ const ReportRepository  = require('../repositories/ReportRepository')
 
 const AuthJwtPayload = require('../utils/AuthJwtPayload') //js-doc purpose
 
+
 exports.generateUserReport = async (req, res) => {
     try {
         /** @type {AuthJwtPayload} */

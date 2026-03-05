@@ -35,9 +35,10 @@ class CodeScanner {
 
                 if (scanTools.includes(CodeScannerTools.SEMGREP)) {
                     const semgrepOut = execSync(
-                        `semgrep --config=p/owasp-top10 ${tmpDir} --json`,
+                        `python -m semgrep --config=p/owasp-top10 ${tmpDir} --json`,
                         { encoding: 'utf8' }
                     );
+					console.log(semgrepOut);
                     semgrepParseData = JSON.parse(semgrepOut);
                 }
 
@@ -47,8 +48,10 @@ class CodeScanner {
                             `cd ${tmpDir} && npm audit --json`,
                             { encoding: 'utf8' }
                         );
+                        console.log(auditOut)
                         npmAuditParseData = JSON.parse(auditOut || '{}');
-                    } catch (err) {
+                    }
+                    catch (err) {
                         npmAuditParseData = err.stdout
                             ? JSON.parse(err.stdout)
                             : {};
@@ -58,9 +61,10 @@ class CodeScanner {
                 if (scanTools.includes(CodeScannerTools.ESLINT)) {
                     try {
                         const eslintOut = execSync(
-                            `eslint --ext .js ${tmpDir} -f json`,
+                            `npx eslint --ext .js ${tmpDir} -f json`,
                             { encoding: 'utf8' }
                         );
+                        console.log(eslintOut)
                         eslintParseData = JSON.parse(eslintOut || '[]');
                     } catch {
                         eslintParseData = [];

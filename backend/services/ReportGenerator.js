@@ -38,7 +38,7 @@ async function generateReport(userId, analysisId) {
     // ===============================
     // Création dossier
     // ===============================
-    const reportsDir = path.join(__dirname, '../uploads', userId, 'rapports');
+    const reportsDir = path.join(__dirname, '../uploads', userId, 'reports');
     if (!fs.existsSync(reportsDir))
         fs.mkdirSync(reportsDir, { recursive: true });
 

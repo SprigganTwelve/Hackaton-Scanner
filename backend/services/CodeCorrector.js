@@ -22,7 +22,9 @@ class CodeCorrector {
 
             case "SQL_INJECTION":
                 // Fix SQL injection using prepared statements
-                return vulnerableCode.replace(/".*?"/, `"SELECT * FROM users WHERE email = ?"`) + `/* SecureScan Fix */connection.execute(query, [email]);`;
+                return vulnerableCode.replace(
+                    /".*?"/, `"SELECT * FROM users WHERE email = ?"`
+                ) + `/* SecureScan Fix */connection.execute(query, [email]);`;
 
             case "XSS":
                 // Fix XSS by escaping output

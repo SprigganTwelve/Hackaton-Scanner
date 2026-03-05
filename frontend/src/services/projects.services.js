@@ -15,7 +15,7 @@ export async function listProjects() {
   // if (useMocks) return mock.listProjects();
   try{
       const response = await api.get("/api/users/projects")
-      console.log("Log project: ", response)
+      // console.log("Log List project: ", response)
       /**
        * @type { {
        *  success: boolean,
@@ -139,16 +139,32 @@ export async function addProjectWithZip(formData)
 export async function scan({ 
   projectId,
   repoUrl,
-  scanTools,
+  scanTools = null,
   isZip = false
 }) {
   try {
     // Determine API endpoint based on whether the project is a ZIP upload or a git repo URL
-    const uri = !isZip ? '/api/users/add-project/url' : '/api/users/add-project/zip';
+    const uri = !isZip ? '/api/users/scan' : '/api/users/scan-zip';
 
-    console.log("MAKING SCAN",{  projectId,
+    console.log([
+            CodeScannerTool.SEMGREP,
+            CodeScannerTool.NPM_AUDIT,
+            CodeScannerTool.ESLINT
+          ])
+          
+    const tools =
+      !scanTools || scanTools.length === 0
+        ? [
+            CodeScannerTool.SEMGREP,
+            CodeScannerTool.NPM_AUDIT,
+            CodeScannerTool.ESLINT
+          ]
+        : scanTools;
+
+    console.log("SCANNING - API CALL INPUT",{  
+      projectId,
       repoUrl,
-      scanTools,
+      scanTools: tools,
     })
 
 
@@ -156,11 +172,7 @@ export async function scan({
     const response = await api.post(uri, {
       projectId,
       repoUrl: repoUrl ?? "", 
-      scanTools:  scanTools ?? [
-          CodeScannerTool.SEMGREP,
-          CodeScannerTool.NPM_AUDIT,
-          CodeScannerTool.ESLINT,
-      ] 
+      scanTools:  tools
     });
 
     // Destructure response safely, with fallback empty objects/arrays

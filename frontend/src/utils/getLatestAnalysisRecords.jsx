@@ -16,10 +16,10 @@ import UserProject from '../services/DTO/UserProject'
  */
 export function getLatestAnalysisRecords(projects) {
 
-  console.log('ANALYS RECORD:', projects);
-
+  
   if (!Array.isArray(projects)) return [];
-
+  
+  console.log('[getLatestAnalysisRecords] PROJECTS:', projects);
   return [...projects]
     .filter(p => p && p.projectId !== undefined && p.projectId !== null)
     .sort((a, b) => {
