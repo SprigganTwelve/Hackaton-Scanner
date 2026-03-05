@@ -12,11 +12,19 @@ class BlacklistedTokenRepository {
      * @param {Date}   param0.expired_at - The time when the token considered expired
      * @returns {Promise<void>}
      */
+<<<<<<< HEAD
     static async save({ token, expired_at }) {
         await pool.query(
             `INSERT INTO blacklisted_token (token, expired_at)
              VALUES (?, ?)`,
             [token, expired_at]
+=======
+    static async save({ token, revoked_at }) {
+        await pool.query(
+            `INSERT INTO blacklisted_token (token, revoked_at)
+             VALUES (?, ?)`,
+            [token, revoked_at]
+>>>>>>> feat/frontendJalon1a
         );
     }
 
@@ -49,10 +57,14 @@ class BlacklistedTokenRepository {
         await pool.query(
             `DELETE FROM blacklisted_token 
 <<<<<<< HEAD
+<<<<<<< HEAD
              WHERE user_id = ? AND expired_at < ?`,
 =======
              WHERE account_id = ? AND revoked_at < ?`,
 >>>>>>> 5c190b9 (fixe bug and add routes to login and register)
+=======
+             WHERE account_id = ? AND revoked_at < ?`,
+>>>>>>> feat/frontendJalon1a
             [userId, new Date()]
         );
     }

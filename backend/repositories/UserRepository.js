@@ -1,5 +1,6 @@
 
 const pool = require('../config/database/mysql.client');
+const pool = require('../config/database/mysql.client');
 
 
 const UserProfile = require('./DTO/User.profile');
