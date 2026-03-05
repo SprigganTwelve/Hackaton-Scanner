@@ -185,4 +185,9 @@ route: /api/users:
                         solution            string          //a corrective measure (desciption)
                     }
 
-        [GET]   /analysis/:analysisId/reports: Download an user special report
+        [GET]   /analysis/:analysisId/reports: Get a report data
+                output:
+                    {
+                        success: bool,
+                        data: {id: number, format: string, created_at: Date, original_name: string, analysis_id: number}
+                    }

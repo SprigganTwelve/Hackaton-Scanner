@@ -283,6 +283,6 @@ class UserRepository
         // retourne directement les lignes
         return rows;
     }
-    
+     
 }
 module.exports = UserRepository

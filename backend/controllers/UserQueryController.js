@@ -117,7 +117,20 @@ exports.getAnalysisReports = async (req, res) => {
 
 
 exports.getKPIStats = async(req, res)=>{
-
+    const { analysisId } = req.params
+    try{
+        const user= req.user;
+        const { score, owaps, npom } =await  UserRepository.getAnalyticsStatcs(analysisId)
+        return res.json({message: "", success: true, data: {}})
+    }
+    catch(error)
+    {
+        console.log("Something went wrong !! ", error)
+        return res.status(500).json({
+            success: false,
+            message: 'Une erreur est survenue lors de la récupération des donées'
+        });
+    }
 }
 
 
