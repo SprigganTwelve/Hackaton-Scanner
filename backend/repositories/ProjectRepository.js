@@ -19,7 +19,7 @@ class ProjectRepository {
     static async addProject(userId, {name, url, is_uploaded = false})
     {
         const [result] = await pool.query(
-            'INSERT INTo project (name, url, account_id, is_uploaded) VALUES (?,?,?,?)',
+            'INSERT INTO project (name, url, account_id, is_uploaded) VALUES (?,?,?,?)',
             [name, url, userId, is_uploaded]
         )
 

@@ -8,6 +8,8 @@ const PasswordHasher = require('../services/PasswordHasher')
 const BlacklistedTokenRepository = require('../repositories/BlacklistedTokenRepository')
 
 const getJwtSecret = require('../config/jwtSecret')
+const AuthJwtPayload = require('../utils/AuthJwtPayload.js')
+
 
 /**
  * 
@@ -21,17 +23,13 @@ exports.login = async (req, res) => {
         
         //Data validation
         if(!email || !password)
-            return res.json({sucess: false,message: "S'il vous plaît, verifiez les chanps & données de la requête"})
+            return res.json({
+                sucess: false,
+                message: "S'il vous plaît, verifiez les chanps & données de la requête"
+            })
         
         //Password Validation
-<<<<<<< HEAD
         const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email: email.trim() })
-=======
-        const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email })
-<<<<<<< HEAD
->>>>>>> 5c190b9 (fixe bug and add routes to login and register)
-=======
->>>>>>> feat/frontendJalon1a
         const isPasswordOkay = await PasswordHasher.compare(password, hashedPassword)
 
         if(!isPasswordOkay)
@@ -41,15 +39,16 @@ exports.login = async (req, res) => {
         await BlacklistedTokenRepository.deleteMany({ userId })
 
         //JWT-Security validation
-        const playload = AuthJwtPayload({sub: userId})
+        const playload = new AuthJwtPayload({sub: userId})
 
         const token = jwt.sign(
-            playload, 
+            { ...playload }, 
             getJwtSecret(),
             { 
-                expiresIn: 3600 //1h
+                expiresIn: 25200 //"7h"
             }
         );
+
         return res.json({
             token,
             success: true,
@@ -87,33 +86,22 @@ exports.register = async (req, res)=>{
         } = req.body;
 
         if(!email || !password)
-<<<<<<< HEAD
             return res.json({
                 success: false,
                 message: "Les champs email et password sont requis"}).status(400)
-=======
-            return res.json({message: "Les champs email et password sont requis"}).status(400)
->>>>>>> feat/frontendJalon1a
 
         if(git_url.trim() && !git_url.startsWith('https://github.com/'))
         {
             return res.json({
-<<<<<<< HEAD
                 success: false,
                 message: 'S\'il vous plaît, veuillez saisir une url github valide'
             }).status(400)
-=======
-                message: 'S\'il vous plaît, veuillez saisir une url github valide'
-            })
->>>>>>> feat/frontendJalon1a
         }
 
         const user = await AuthRepository.save({
             name, 
             email,
-<<<<<<< HEAD
-<<<<<<< HEAD
-            password: PasswordHasher.hash(password),
+            password: await PasswordHasher.hash(password),
             git_url,
             git_access_token: git_access_token || null
         })
@@ -122,37 +110,14 @@ exports.register = async (req, res)=>{
             success: true,
             message: "Opération exécuté avec succès"
         }).status(200)
-=======
-=======
->>>>>>> feat/frontendJalon1a
-            password: await PasswordHasher.hash(password),
-            git_url,
-            hash_git_access_token: git_access_token ? await PasswordHasher.hash(git_access_token) : null
-        })
-        return res.status(200).json({
-			user,
-			message: "Opération exécutée avec succès",
-		});
-<<<<<<< HEAD
->>>>>>> 5c190b9 (fixe bug and add routes to login and register)
-=======
->>>>>>> feat/frontendJalon1a
     }
     catch(error)
     {
         console.log("Something went wrong !! ", error)
-<<<<<<< HEAD
-<<<<<<< HEAD
         return res.json({
             success: false,
             message: "Une erreur est survenue, Veuillez reéssayer"
         }).status(400)
-=======
-        return res.status(500).json({ message: "Une erreur est survenue, veuillez réessayer" });
->>>>>>> 5c190b9 (fixe bug and add routes to login and register)
-=======
-        return res.status(500).json({ message: "Une erreur est survenue, veuillez réessayer" });
->>>>>>> feat/frontendJalon1a
     }
 }
 
@@ -162,13 +127,9 @@ exports.logout = async (req, res) => {
         const authHeader = req.headers.authorization;
 
         if (!authHeader?.startsWith("Bearer ")) {
-<<<<<<< HEAD
             return res.status(401).json({
                 message: "Token manquant ou mal formé"
             });
-=======
-            return res.status(401).json({ message: "Token manquant ou mal formé" });
->>>>>>> feat/frontendJalon1a
         }
 
         const token = authHeader.replace("Bearer ", "");

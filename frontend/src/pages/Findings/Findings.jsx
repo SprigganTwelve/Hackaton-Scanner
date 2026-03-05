@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listFindings } from "../../services/scans.services";
+// import { listFindings } from "../../services/scans.services";
 import { useParams } from "react-router-dom";
 // import { api } from "../../services/api"
 

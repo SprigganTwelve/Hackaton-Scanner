@@ -1,65 +1,82 @@
-
-
 const jwt = require('jsonwebtoken')
 
-//Value Objects
+// Value Objects
 const AuthJwtPayload = require('../utils/AuthJwtPayload')
 
-//Services
+// Services
 const getJwtSecret = require('../config/jwtSecret')
 const BlacklistedTokenRepository = require('../repositories/BlacklistedTokenRepository')
-
-
 
 /**
  * Middleware that validates whether the authenticated user
  * has the required permission to perform the requested action.
  *
- * This function should be called before accessing protected routes.
- *
- * @param   {import('express').Request} req - The HTTP request object.
- * @param   {import('express').Response} res - The HTTP response object.
- * @param   {import('express').NextFunction} next - The next middleware function.
+ * @param   {import('express').Request} req
+ * @param   {import('express').Response} res
+ * @param   {import('express').NextFunction} next
  * @returns {Promise<void>}
  */
-exports.checkUserAuthorization = async(req, res, next)=>{
+exports.checkUserAuthorization = async (req, res, next) => {
     try {
-        //Data Validation
-        const token  = req.header.authorization?.replace('Bearer ', "")
-        if(!token)
-            return res.json({message: 'Permission non autorisé, veuillez redemarrer votre session de connexion en vous reconnectant'})
 
-        //Tokne Validation
-        const isTokenNotBlacklisted = await BlacklistedTokenRepository.isTokenBlacklisted({ token })
-        
-        if(isTokenNotBlacklisted)
-        {
-            return res.json({
-                    message: 'Permission non autorisé, veuillez redemarrer votre session de connexion en vous reconnectant'
-            }).status(401)
+        // Authorization header parsing
+        const authHeader = req.headers.authorization
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({
+                message: 'Permission non autorisée, veuillez vous reconnecter'
+            })
         }
-        
-        //Access token decoding & validation
-        let decoded;
-        try{
+
+        const token = authHeader.replace("Bearer ", "").trim()
+
+        if (!token) {
+            return res.status(401).json({
+                message: 'Permission non autorisée, veuillez vous reconnecter'
+            })
+        }
+
+        // Check blacklist
+        const isBlacklisted = await BlacklistedTokenRepository.isTokenBlacklisted({ token })
+
+        if (isBlacklisted) {
+            return res.status(401).json({
+                message: 'Session expirée, veuillez vous reconnecter'
+            })
+        }
+
+        // Token validation
+        let decoded
+        try {
             decoded = jwt.verify(token, getJwtSecret())
         }
         catch (error) {
-            return res.json({
+
+            if (error.name === "TokenExpiredError") {
+                return res.status(401).json({
+                    message: 'Token expiré'
+                })
+            }
+
+            return res.status(401).json({
                 message: 'Token invalide'
-            }).status(401)
+            })
         }
 
-        //Token decoding & get to next step
-        /*** @var user  AuthJwtPayload */
-        req.user = new AuthJwtPayload({ sub: decoded.sub, issue_at: decoded.issue_at });
+        // Attach user payload
+        req.user = new AuthJwtPayload({
+            sub: decoded.sub,
+            issue_at: decoded.iat
+        })
+
         return next()
+
     }
-    catch (error)
-    {
-        console.log("Something went wrong")
-        return res.json({
+    catch (error) {
+        console.error("Authorization middleware error:", error)
+
+        return res.status(500).json({
             message: 'Une erreur inattendue est survenue lors de la vérification de l\'accès'
-        }).status(500)
+        })
     }
 }

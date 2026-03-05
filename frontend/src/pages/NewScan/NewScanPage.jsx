@@ -1,8 +1,9 @@
 // src/pages/NewScan/NewScanPage
 import { useMemo, useRef, useState } from "react";
 import "./NewScanPage.css";
-import { createScan } from "../../services/scans.services";
+// import { createScan } from "../../services/scans.services";
 import { useNavigate } from "react-router-dom";
+import { addProjetWithUrl } from "../../services/projects.services";
 
 const PROVIDERS = [
   { value: "github", label: "GitHub" },
@@ -18,6 +19,7 @@ const TOOLS = [
   { id: "phpstan", name: "PHPStan", tag: "Qualité", desc: "Analyse statique PHP" },
   { id: "composer-audit", name: "composer audit", tag: "Dépendances", desc: "Audit des dépendances PHP" },
 ];
+
 
 function Pill({ children }) {
   return <span className="pill">{children}</span>;
@@ -42,10 +44,12 @@ function ToolCard({ tool, enabled, onToggle }) {
 export default function NewScanPage() {
   const fileInputRef = useRef(null);
 
-  const [sourceType, setSourceType] = useState("git"); // "git" | "zip"
-  const [provider, setProvider] = useState("github");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [branch, setBranch] = useState("main");
+	const [sourceType, setSourceType] = useState("git"); // "git" | "zip"
+	const [provider, setProvider] = useState("github");
+	const [branch, setBranch] = useState("main");
+ 	const [name, setName] = useState("");
+	const [repoUrl, setRepoUrl] = useState("");
+	const [gitAccessToken, setGitAccessToken] = useState("");
 
   const [zipFile, setZipFile] = useState(null);
 
@@ -79,32 +83,27 @@ export default function NewScanPage() {
     setZipFile(f);
   }
 
-  async function onLaunch() {
-    // TODO: brancher sur backend / mocks
-    // - si git: POST /api/scans { repoUrl, provider, branch, tools: [...] }
-    // - si zip: upload FormData + tools
-    const payload = {
-      sourceType,
-      provider,
-      repoUrl,
-      branch,
-      zipFileName: zipFile?.name || null,
-      tools: Array.from(enabledTools),
-    };
+  const handleLaunch = async () => {
+	try {
+		const result = await addProjetWithUrl({
+			name,
+			repoUrl,
+			token: gitAccessToken,
+		});
+		console.log(result)
 
-    const navigate = useNavigate();
+		if (result?.success === false) {
+			alert(result?.message || "Création projet impossible")
+			return;
+		}
 
-	const result = await createScan(payload);
-	navigate(`/scans/${result.id}`);
-
-    // Simule une “détection automatique” (juste pour le front)
-    setAutoDetected((prev) => ({
-      ...prev,
-      language: prev.language || "Node.js + TypeScript",
-      framework: prev.framework || "Express.js",
-      packageManager: prev.packageManager || "npm",
-    }));
-  }
+		alert(result?.message || "Projet créé !")
+	} 
+  catch (e) {
+		console.error(e);
+		alert("Erreur serveur lors de la création du projet")
+	}
+};
 
   return (
     <div className="ns">
@@ -228,7 +227,7 @@ export default function NewScanPage() {
             </div>
           </div>
 
-          <button type="button" className={`cta ${canLaunch ? "" : "cta--disabled"}`} onClick={onLaunch} disabled={!canLaunch}>
+          <button type="button" className="btn_launchScan" onClick={handleLaunch}>
             ▶ Cloner et lancer le scan
           </button>
         </div>

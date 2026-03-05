@@ -1,4 +1,3 @@
-const { end } = require("../../config/database/mysql.client");
 
 /**
  * Define data retreive from owaps

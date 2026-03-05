@@ -9,13 +9,16 @@ const UserQueryRouter = require('./routes/UserQueryRouter');
 
 const app = express()
 const PORT = process.env.PORT || 3000
-
+const cors = require('cors')
 
 /**
  * Registers built-in Express middleware to parse incoming request bodies.
  */
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(cors({
+    origin: '*'
+}))
 
 /**
  * Routers

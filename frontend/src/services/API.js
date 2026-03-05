@@ -15,6 +15,7 @@ function buildUrl(path, query) {
   return urlObj.toString();
 }
 
+
 async function request(path, options = {}) {
 	const {
 		method = "GET",
@@ -24,7 +25,7 @@ async function request(path, options = {}) {
 		timeoutMs = 60000,
 	} = options;
 
-	const controller = new AbortController();
+	const controller = new AbortController(); 
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
 	const finalHeaders = {
@@ -37,58 +38,63 @@ async function request(path, options = {}) {
 	const isFormData =
 		typeof FormData !== "undefined" && body instanceof FormData;
 
-	if (
-		body &&
-		typeof body === "object" &&
-		!isFormData &&
-		!(body instanceof Blob)
-	) {
-		finalHeaders["Content-Type"] = "application/json";
+	const isBlob =
+		typeof Blob !== "undefined" && body instanceof Blob;
+
+	if (body && typeof body === "object" && !isFormData && !isBlob) {
+		if (!finalHeaders["Content-Type"]) {
+			finalHeaders["Content-Type"] = "application/json";
+		}
 		finalBody = JSON.stringify(body);
 	}
 
-  	const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-	if (token) {
+	// Authorization
+	const token =
+		typeof localStorage !== "undefined"
+			? localStorage.getItem("token")
+			: null;
+
+	if (token && !finalHeaders.Authorization) {
 		finalHeaders.Authorization = `Bearer ${token}`;
 	}
 
 	try {
 		const res = await fetch(buildUrl(path, query), {
-		method,
-		headers: finalHeaders,
-		body: method === "GET" || method === "HEAD" ? undefined : finalBody,
-		signal: controller.signal,
+			method,
+			headers: finalHeaders,
+			body: method === "GET" || method === "HEAD" ? undefined : finalBody,
+			signal: controller.signal,
 		});
 
 		const contentType = res.headers.get("content-type") || "";
 		const isJson = contentType.includes("application/json");
 
 		const data = isJson
-		? await res.json().catch(() => null)
-		: await res.text().catch(() => null);
+			? await res.json().catch(() => null)
+			: await res.text().catch(() => null);
 
 		if (!res.ok) {
-		const error = new Error(`HTTP ${res.status}`);
-		error.status = res.status;
-		error.data = data;
-		throw error;
+			const error = new Error(`HTTP ${res.status}`);
+			error.status = res.status;
+			error.data = data;
+			throw error;
 		}
 
 		return data;
-	} finally {
+	} 
+	catch (e) {
+		console.error("ADD PROJECT ERROR", e?.status, e?.data || e);
+		alert(e?.data?.message || "Erreur 400 lors de la création du projet");
+	}
+	finally {
 		clearTimeout(timeoutId);
 	}
 }
 
 export const api = {
-  get: (path, opts) => request(path, { ...opts, method: "GET" }),
-  post: (path, body, opts) => request(path, { ...opts, method: "POST", body }),
-  put: (path, body, opts) => request(path, { ...opts, method: "PUT", body }),
-  patch: (path, body, opts) => request(path, { ...opts, method: "PATCH", body }),
-  del: (path, opts) => request(path, { ...opts, method: "DELETE" }),
-
-//   upload: (path, formData, opts) =>
-//     request(path, { ...opts, method: "POST", body: formData }),
+	get: (path, opts) => request(path, { ...opts, method: "GET" }),
+	post: (path, body, opts) => request(path, { ...opts, method: "POST", body }),
+	put: (path, body, opts) => request(path, { ...opts, method: "PUT", body }),
+	patch: (path, body, opts) => request(path, { ...opts, method: "PATCH", body }),
+	del: (path, opts) => request(path, { ...opts, method: "DELETE" }),
 };
-
-

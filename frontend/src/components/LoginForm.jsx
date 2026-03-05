@@ -11,15 +11,17 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const result = await login(email, password);
 
       const ok = result?.success === true || !!result?.token;
-	if (ok) navigate("/new-scan");
-	else alert(result?.message || "Email ou mot de passe invalide");
+      
+      if (ok) 
+        navigate("/new-scan");
+      else alert(result?.message || "Email ou mot de passe invalide");
 
-    } catch (err) {
+    }
+    catch (err) {
       console.error("Login failed:", err);
       alert("Email ou mot de passe invalide");
     }

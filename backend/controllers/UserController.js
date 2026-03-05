@@ -18,7 +18,7 @@ const CodeScannerTool = require('../enums/CodeScannerTool');
 //Helpers/Utility
 const AuthJwtPayload = require('../utils/AuthJwtPayload');
 const GitRepoHelper = require('../utils/GitRepoHelper')
-const RecordScanHelper = require('../utils/RecorScanHelper')
+const RecordScanHelper = require('../utils/RecordScanHelper')
 
 const AuthPlayload = require('../utils/AuthJwtPayload');
 
@@ -30,38 +30,42 @@ const AuthPlayload = require('../utils/AuthJwtPayload');
  */
 exports.addProjectWithURL = async (req, res) => {
     //Data validation
-    const { name, repoUrl, scannTools, token } = req.body;
+    const { name, repoUrl, token } = req.body;
+    console.log({name, repoUrl, token})
 
-    /** @var {AuthPlayload} authPayload */
+    /** @type {AuthPlayload} authPayload */
     const authPayload = req.user;
-    if( !name || 
-        !repoUrl || 
-        !Array.isArray(scannTools) || 
-        scannTools.length === 0
+
+    if( !name && 
+        !repoUrl 
     ){
         return res.status(400).json({ 
             success: false,
-            message: 'Veuillez fournir tous les champs requis : name, repoUrl, scannTools (doit être un tableau non vide)'
+            message: 'Veuillez fournir tous les champs requis : name, repoUrl'
         });
     }
 
     //Check repository existance
     const doesRepoExixt = await GitRepoHelper.repoExists(repoUrl, authPayload.sub, token)
-    if(!doesRepoExixt)
+    if(!doesRepoExixt){
         return res.status(400).json({
             success: false, 
             message: 'Le dépôt GitHub spécifié n\'existe pas ou est inaccessible'
         })
+    }
     
     try {
         //Save the project in the database
-        await UserRepository.addProject(authPayload.sub, {name, url: repoUrl})
-        return res.status(200).json({ ducess: true, message: 'Projet ajouté avec succès'})
+        await ProjectRepository.addProject(authPayload.sub, {name, url: repoUrl})
+        return res.status(200).json({ success: true, message: 'Projet ajouté avec succès'})
     }
     catch (error) {
         //Log the error & return a messg to the client
         console.log('Erreur lors de l\'ajout du projet :', error);
-        return res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout du projet' });
+        return res.status(500).json({ 
+            success: false,
+            message: 'Erreur lors de l\'ajout du projet'
+        });
     }
 }
 
@@ -78,9 +82,9 @@ exports.addProjectWithZip = async (req, res) => {
         const file = req.file;
         /** @var {AuthPlayload} authPayload */
         const authPayload = req.user;
-        if(!file)
+        if (!file || !file.originalname.endsWith('.zip'))
         {
-            console.log('Missing Zip File')
+            console.log('Missing or invalid Zip File')
             return res.status(400).json({ success: false, message: 'Zip File manquant'})
         }
 
@@ -175,20 +179,25 @@ exports.scanRepo = async (req, res) => {
         /** @type {ScanResult} */
         const scanResult = await CodeScanner.performScan({repoUrl, scanTools});
         
+        let results;
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                RecordScanHelper.execute(scanResult)
+                results = await RecordScanHelper.execute(scanResult)
                 commit()
             }
             catch(error)
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 rollback()
+                return res.json({
+                    success: false,
+                    message: 'Scan échoué'
+                }).status(400)
             }
         })
         //Retunn the scan results to the client
-        return res.status(200).json({ success: true, results: results });
+        return res.status(200).json({ success: true, results });
     }
     catch (error) {
         console.error('Erreur lors du scan:', error);
@@ -251,17 +260,21 @@ exports.scanZip = async (req, res) => {
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                RecordScanHelper.execute(scanResult)
+                await RecordScanHelper.execute(scanResult)
                 commit()
             }
             catch(error)
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 rollback()
+                return res.json({
+                    success: false,
+                    message: 'Scan échoué'
+                }).status(400)
             }
         })
 
-        return res.status(200).json({ success: true, results });
+        return res.status(200).json({ success: true, data: results });
     }
     catch (error) {
         console.error('Erreur lors du scan du ZIP:', error);

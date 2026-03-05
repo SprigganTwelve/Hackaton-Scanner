@@ -1,7 +1,11 @@
+const path = require('path')
+const {BASIC_UPLOADING_FOLDER_PATH} = require('../config/upload')
 
 const UserRepository = require('../repositories/UserRepository');
 const { generateReport } = require('../services/ReportGenerator');
-const AuthJwtPayload = require('../utils/AuthJwtPayload')
+const ReportRepository  = require('../repositories/ReportRepository') 
+
+const AuthJwtPayload = require('../utils/AuthJwtPayload') //js-doc purpose
 
 exports.generateUserReport = async (req, res) => {
     try {
@@ -37,3 +41,27 @@ exports.generateUserReport = async (req, res) => {
 		});
     }
 };
+
+
+exports.downloadPdf = async ({req, res})=> {
+    const { analysisId } = req.params;
+    try{
+        /** @type {AuthJwtPayload} */
+        const user = req.user;
+        const {original_name: fileName} = await ReportRepository.getReportByAnalysisId(analysisId)
+        const reportFilePath = path.join(BASIC_UPLOADING_FOLDER_PATH, user.sub, fileName)
+
+        res.download(reportFilePath, fileName, (err)=>{
+            if(err)
+            {
+                console.log("An Error occur while downloading : ", err)
+                return res.status(400).json({ success: false, message: 'Fichier non trouvé'})
+            }
+        })
+    }
+    catch(error)
+    {
+        console.log("Something went wrong : ", error)
+        return res.status(400).json({message: "Erreur lors du téléchargement", success: false})
+    }
+}

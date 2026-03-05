@@ -92,7 +92,16 @@ route: /api/users:
                 { 
                     success: bool, 
                     message: string , 
-                    results?:  
+                    results?:  {
+                        owasp: OwaspCategoryMap;    // src/services/DTO/OwaspCategoryMap
+                        analysisRecord: {
+                            id: string;
+                            project_id: int;
+                            score?: string;
+                        };
+                        eslint: MappedIssue[];      // src/services/DTO/MappedIssue
+                        npmAudit: MappedIssue[];    // src/services/DTO/MappedIssue
+                    }
                 } #the result exist only when the opreation went succesfully overwise it is undifined
 
 
@@ -186,3 +195,8 @@ route: /api/users:
                     }
 
         [GET]   /analysis/:analysisId/reports: Download an user special report
+                output:
+                    - dowloaded file on user computer
+                    or
+                    - { message: string, success: false }   #when something went wrong
+

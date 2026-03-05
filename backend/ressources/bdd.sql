@@ -4,126 +4,81 @@ COLLATE utf8mb4_unicode_ci;
 
 USE secure_scann;
 
--- Define or represent an user inside the system
+-- =========================
+-- ACCOUNT
+-- =========================
 CREATE TABLE account(
-   id  VARCHAR(250) PRIMARY KEY,
-   name VARCHAR(250),         
-   email VARCHAR(250) UNIQUE NOT NULL,
-   password VARCHAR(255) NOT NULL,
-   id  VARCHAR(250) PRIMARY KEY,
-   name VARCHAR(250),         
-   email VARCHAR(250) UNIQUE NOT NULL,
+   id VARCHAR(250) PRIMARY KEY,
+   name VARCHAR(250),
+   email VARCHAR(250) NOT NULL UNIQUE,
    password VARCHAR(255) NOT NULL,
    git_url VARCHAR(350),
-   git_access_token VARCHAR(250)     -- represent a PAT(Personal Access Token) that is used to access the user's git repository, it is hashed for security reasons
-   git_access_token VARCHAR(250)     -- represent a PAT(Personal Access Token) that is used to access the user's git repository, it is hashed for security reasons
+   git_access_token VARCHAR(250)
 );
 
--- Represent a project upload by an user
+-- =========================
+-- PROJECT
+-- =========================
 CREATE TABLE project(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL,                  -- can represent the name of the cloned repository or an original name of the uploaded zip file
+   name VARCHAR(250) NOT NULL,
    original_name VARCHAR(250) DEFAULT NULL,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   url VARCHAR(250) NOT NULL,                   -- Represent the git url if one is associated
-   is_uploaded TINYINT(1) NOT NULL DEFAULT 0,   -- indicates if the project was uploaded as a zip file or not
+   url VARCHAR(250) NOT NULL,
+   is_uploaded TINYINT(1) NOT NULL DEFAULT 0,
 
    account_id VARCHAR(250) NOT NULL,
-   FOREIGN KEY(account_id) REFERENCES account(id)
+   FOREIGN KEY(account_id)
+      REFERENCES account(id) ON DELETE CASCADE
 );
 
--- Represent the OWASP category of a finding (e.g. Injection, Broken Authentication, etc.)
+-- =========================
+-- OWASP CATEGORY
+-- =========================
 CREATE TABLE owasp_category(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL UNQIUE,
+   name VARCHAR(250) NOT NULL UNIQUE
 );
 
-
--- Existing used tools for scanning
+-- =========================
+-- TOOLS
+-- =========================
 CREATE TABLE tools(
    id INT AUTO_INCREMENT PRIMARY KEY,
    name VARCHAR(250) NOT NULL UNIQUE
 );
 
-
--- Represent unique rule that could be violated (e.g. AWS Hardcoded Password, etc.)
+-- =========================
+-- RULE
+-- =========================
 CREATE TABLE rule(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   
-   check_id VARCHAR(250) NOT NULL UNIQUE,       -- or ruleId, represnts the unique error identifier in the sys         -- represents the rule that was violated (ex: AWS Hardcoded Password)
-   description TEXT ,                   -- represents the description of the rule
-   name VARCHAR(250) NOT NULL,                  -- represents the name of the rule
+   check_id VARCHAR(250) NOT NULL UNIQUE,
+   description TEXT,
+   name VARCHAR(250) NOT NULL,
 
-
-   owasp_category_id INT NOT NULL,              -- represents the OWASP category of the rule
-   
-   FOREIGN KEY(owasp_category_id) REFERENCES owasp_category(id)
+   owasp_category_id INT NOT NULL,
+   FOREIGN KEY(owasp_category_id)
+      REFERENCES owasp_category(id)
 );
 
-
-
--- Represent the OWASP category of a finding (e.g. Injection, Broken Authentication, etc.)
-CREATE TABLE owasp_category(
-   id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL UNQIUE,
-);
-
-
--- Existing used tools for scanning
-CREATE TABLE tools(
-   id INT AUTO_INCREMENT PRIMARY KEY,
-   name VARCHAR(250) NOT NULL UNIQUE
-);
-
-
--- Represent unique rule that could be violated (e.g. AWS Hardcoded Password, etc.)
-CREATE TABLE rule(
-   id INT AUTO_INCREMENT PRIMARY KEY,
-   
-   check_id VARCHAR(250) NOT NULL UNIQUE,       -- or ruleId, represnts the unique error identifier in the sys         -- represents the rule that was violated (ex: AWS Hardcoded Password)
-   description TEXT ,                   -- represents the description of the rule
-   name VARCHAR(250) NOT NULL,                  -- represents the name of the rule
-
-
-   owasp_category_id INT NOT NULL,              -- represents the OWASP category of the rule
-   
-   FOREIGN KEY(owasp_category_id) REFERENCES owasp_category(id)
-);
-
-
-
+-- =========================
+-- ANALYSIS RECORD
+-- =========================
 CREATE TABLE analysis_record(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   score ENUM('A', 'B', 'C', 'D') DEFAULT NULL,
+   score ENUM('A','B','C','D') DEFAULT NULL,
    started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
    status ENUM('PENDING','RUNNING','COMPLETED','FAILED') DEFAULT 'PENDING',
-   score ENUM('A', 'B', 'C', 'D') DEFAULT NULL,
-   started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   status ENUM('PENDING','RUNNING','COMPLETED','FAILED') DEFAULT 'PENDING',
+
    project_id INT NOT NULL,
-
    FOREIGN KEY(project_id)
       REFERENCES project(id) ON DELETE CASCADE
 );
 
-
-CREATE TABLE analysis_tools(
-   analysis_record_id INT NOT NULL,
-   tool_id INT NOT NULL,
-
-   PRIMARY KEY (analysis_record_id, tool_id),
-
-   FOREIGN KEY(analysis_record_id)
-      REFERENCES analysis_record(id) ON DELETE CASCADE,
-
-   FOREIGN KEY(tool_id)
-      REFERENCES tools(id)
-
-   FOREIGN KEY(project_id)
-      REFERENCES project(id) ON DELETE CASCADE
-);
-
-
+-- =========================
+-- ANALYSIS TOOLS (M:N)
+-- =========================
 CREATE TABLE analysis_tools(
    analysis_record_id INT NOT NULL,
    tool_id INT NOT NULL,
@@ -137,111 +92,113 @@ CREATE TABLE analysis_tools(
       REFERENCES tools(id)
 );
 
--- A Report that could be made after analysis 
+-- =========================
+-- REPORT
+-- =========================
 CREATE TABLE report(
    id INT AUTO_INCREMENT PRIMARY KEY,
    format VARCHAR(50),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    path VARCHAR(250) NOT NULL,
    original_name VARCHAR(250) NOT NULL,
+
    analysis_id INT UNIQUE,
-   FOREIGN KEY(analysis_id) REFERENCES analysis_record(id)
+   FOREIGN KEY(analysis_id)
+      REFERENCES analysis_record(id) ON DELETE CASCADE
 );
 
-
-
--- Finding - description about an existing error
+-- =========================
+-- FINDING
+-- =========================
 CREATE TABLE finding(
    id INT AUTO_INCREMENT PRIMARY KEY,
 
-   file_path VARCHAR(250) NOT NULL,          -- represents the path of the file where the error is located
+   file_path VARCHAR(250) NOT NULL,
+   is_corrected TINYINT(1) DEFAULT 0,
 
-   is_corrected TINYINT(1) DEFAULT 0;
-   
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
-   code TEXT NOT NULL,                         -- represents the code snippet where the error is located
+   code TEXT NOT NULL,
 
    tool_id INT DEFAULT NULL,
-   rule_id INT NOT NULL,              -- represents the rule that was violated (ex: AWS Hardcoded Password)
+   rule_id INT NOT NULL,
    analysis_record_id INT NOT NULL,
 
-   fingerprint VARCHAR(255) NOT NULL,  -- helps detect if the same error is corrected, existing or reintroduced
+   fingerprint VARCHAR(255) NOT NULL,
+
    UNIQUE(fingerprint, analysis_record_id),
 
-   FOREIGN KEY(rule_id) REFERENCES rule(id),
-   FOREIGN KEY(tool_id) REFERENCES tools(id),
-   FOREIGN KEY(analysis_record_id) REFERENCES analysis_record(id) ON DELETE CASCADE
+   FOREIGN KEY(rule_id)
+      REFERENCES rule(id),
 
-   fingerprint VARCHAR(255) NOT NULL,  -- helps detect if the same error is corrected, existing or reintroduced
-   UNIQUE(fingerprint, analysis_record_id),
+   FOREIGN KEY(tool_id)
+      REFERENCES tools(id),
 
-   FOREIGN KEY(rule_id) REFERENCES rule(id),
-   FOREIGN KEY(tool_id) REFERENCES tools(id),
-   FOREIGN KEY(analysis_record_id) REFERENCES analysis_record(id) ON DELETE CASCADE
+   FOREIGN KEY(analysis_record_id)
+      REFERENCES analysis_record(id) ON DELETE CASCADE
 );
 
-
-
-
-
-
-
--- Details about the related line
+-- =========================
+-- LINE INFO
+-- =========================
 CREATE TABLE line_info(
    id INT AUTO_INCREMENT PRIMARY KEY,
    start_index INT NOT NULL,
    end_index INT DEFAULT NULL,
-   end_index INT DEFAULT NULL,
+
    finding_id INT NOT NULL,
-   FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
-   FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
+   FOREIGN KEY(finding_id)
+      REFERENCES finding(id) ON DELETE CASCADE
 );
 
-
-
--- Potential solutions that could be apply
+-- =========================
+-- SOLUTION
+-- =========================
 CREATE TABLE solution(
    id INT AUTO_INCREMENT PRIMARY KEY,
    corrective_measure TEXT,
+
    finding_id INT UNIQUE,
-   FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
-   FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
+   FOREIGN KEY(finding_id)
+      REFERENCES finding(id) ON DELETE CASCADE
 );
 
-
-
--- Security for invalid access_token
+-- =========================
+-- BLACKLISTED TOKEN
+-- =========================
 CREATE TABLE blacklisted_token(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   hash_token VARCHAR(250),
-   epired_at DATETIME,
-   issue_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   token VARCHAR(250),
+   expired_at DATETIME,
+   issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-   account_id VARCHAR(250) ,
-   FOREIGN KEY(account_id) REFERENCES account(id) ON DELETE CASCADE
+   account_id VARCHAR(250),
+   FOREIGN KEY(account_id)
+      REFERENCES account(id) ON DELETE CASCADE
 );
 
+-- =========================
+-- DEFAULT DATA
+-- =========================
+INSERT INTO tools (name) VALUES
+('semgrep'),
+('eslint'),
+('npmAudit');
 
--- Available tools for scanning
-INSERT INTO tools (name) VALUES ('semgrep');
-INSERT INTO tools (name) VALUES ('eslint'); 
-INSERT INTO tools (name) VALUES ('npmAudit');
+INSERT INTO owasp_category (name) VALUES
+('A01_Broken_Access_Control'),
+('A02_Security_Misconfiguration'),
+('A03_Software_Supply_Chain_Failures'),
+('A04_Cryptographic_Failures'),
+('A05_Injection'),
+('A06_Insecure_Design'),
+('A07_Auth_Failures'),
+('A08_Data_Integrity_Failures'),
+('A09_Logging_Failures'),
+('A10_Mishandling_Of_Exceptional_Conditions');
 
-
--- Available OWAPS categories
-INSERT INTO owasp_category (name) VALUES ('A01_Broken_Access_Control');
-INSERT INTO owasp_category (name) VALUES ('A02_Security_Misconfiguration');
-INSERT INTO owasp_category (name) VALUES ('A03_Software_Supply_Chain_Failures');
-INSERT INTO owasp_category (name) VALUES ('A04_Cryptographic_Failures');
-INSERT INTO owasp_category (name) VALUES ('A05_Injection');
-INSERT INTO owasp_category (name) VALUES ('A06_Insecure_Design');
-INSERT INTO owasp_category (name) VALUES ('A07_Auth_Failures');
-INSERT INTO owasp_category (name) VALUES ('A08_Data_Integrity_Failures');
-INSERT INTO owasp_category (name) VALUES ('A09_Logging_Failures');
-INSERT INTO owasp_category (name) VALUES ('A10_Mishandling_Of_Exceptional_onditions');
-
-
+-- =========================
+-- INDEXES
+-- =========================
 CREATE INDEX idx_project_account  ON project(account_id);
 CREATE INDEX idx_analysis_project ON analysis_record(project_id);
 CREATE INDEX idx_finding_analysis ON finding(analysis_record_id);

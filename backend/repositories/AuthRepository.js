@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../config/database/mysql.client');
 
+const CryptoSecurityService = require('../services/CryptoSecurityService')
+
 // excexption classes
 const RessourceNotFound = require('../core/errors/NotFoundRessource');
 
@@ -36,17 +38,17 @@ class AuthRepository {
      * @param {string} password
      * @param {string} name
      * @param {string} git_url
-     * @param {string} hash_git_access_token
+     * @param {string} git_access_token
      * @returns {Promise<Object>} The saved user data
      */
     static async save({ 
         email, password, git_url, 
-        hash_git_access_token, name 
+        git_access_token, name 
     }) {
         const [result] = await pool.query(
-            `INSERT INTO account (id, email, password, name, git_url, hash_git_access_token)
+            `INSERT INTO account (id, email, password, name, git_url, git_access_token)
              VALUES (?,?, ?, ?, ?, ?)`,
-            [ uuidv4(), email, password, name, git_url, hash_git_access_token ]
+            [ uuidv4(), email, password, name, git_url, CryptoSecurityService.encode(git_access_token) ]
         );
 
         // result.insertId contient l'ID généré par MySQL
@@ -54,7 +56,6 @@ class AuthRepository {
             id: result.insertId,
             email, password,
             name, git_url,
-            hash_git_access_token
         };
     }
 }

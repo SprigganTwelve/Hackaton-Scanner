@@ -6,15 +6,20 @@ const LineInfo = require('../valueObjects/LineInfo')
 //enums
 const CodeScannerTool = require('../enums/CodeScannerTool')
 
+//DTO
+const OwaspCategoryMap = require('../services/DTO/OwaspCategoryMap')  //For JS-DOC
+const MappedIssue = require('../services/DTO/MappedIssue')            //FOR JS-Doc
+
 //Repositories
 const FindingRepository = require('../repositories/FindingRepository')
 const SecurityRuleRepository = require('../repositories/SecurityRuleRepository')
 const AnalysisToolRepository = require('../repositories/AnalysisToolsRepository')
 const AnalysisRecordRepository = require('../repositories/AnalysisRecordRepository')
 
+
 //Services
 const ScanResult = require("../services/DTO/ScanResult");
-const MappedIssue = require('../services/DTO/MappedIssue')
+
 
 //Utility
 const ScoreAnalizer = require('./ScoreAnalyzer');
@@ -25,6 +30,18 @@ class RecordScanHelper
     /**
      * This one help integrate all the data needed for bdd
      * @param {ScanResult} scanResult - the result after scan
+     * @return {
+     *      Promise<{
+     *          owasp: OwaspCategoryMap;
+     *          analysisRecord: {
+     *              id: string;
+     *              project_id: int;
+     *              score?: string;
+     *          };
+     *          eslint: MappedIssue[];
+     *          npmAudit: MappedIssue[];
+     *      }>
+     * }
      */
     static async execute(projectId, scanResult)
     {
@@ -40,13 +57,17 @@ class RecordScanHelper
             score: scoreBadge
         });
 
+        const owasp = scanResult.owasp ?? {}    //The owasp error top 10 categories
+        const npmAudit = scanResult.npmAudit ?? []
+        const eslint = scanResult.eslint ?? []
+
         //Record Semgrep Finding result Into Bdd
         if(Array.isArray(scanResult.semgrepResults) && scanResult.semgrepResults.length> 0)
         {
             /** @type {{ [key: string]: MappedIssue[] }} */
-            const owasp = scanResult.owasp ?? {}
-            for(const [key, value]  of Object.entries(owasp)){
-                for(issue of owasp){
+            for(const [key, value]  of Object.entries(owasp))
+            {
+                for(issue of value){
                     await this.recordMappedIssue(issue, key, CodeScannerTool.SEMGREP)
                 }
             }
@@ -56,7 +77,6 @@ class RecordScanHelper
         //Record ESLint result into bdd
         if(Array.isArray(scanResult.eslint) && scanResult.eslint.length > 0)
         {
-            const eslint = scanResult.eslint;
             for(issue of eslint){
                 await this.recordMappedIssue(issue, null, CodeScannerTool.ESLINT)
                 analysisTools.push(CodeScannerTool.ESLINT)
@@ -67,14 +87,15 @@ class RecordScanHelper
         //Record Npm Audit record into bdd
         if(Array.isArray(scanResult.npmAudit) && scanResult.eslint.length > 0)
         {
-            const audit = scanResult.npmAudit
-            for(const issue of audit){
-                await this.recordMappedIssue(audit, null, CodeScannerTool.NPM_AUDIT )
+            for(const issue of npmAudit){
+                await this.recordMappedIssue(issue, null, CodeScannerTool.NPM_AUDIT )
             }
             analysisTools.push(CodeScannerTool.NPM_AUDIT)
         }
 
         await AnalysisRecordRepository.addAnalysisTools(analysisTools)
+
+        return { owasp, analysisRecord, eslint, npmAudit };
     }
 
 

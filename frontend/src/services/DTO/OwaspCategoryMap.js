@@ -1,4 +1,5 @@
-const MappedIssue = require("./MappedIssue")
+
+import MappedIssue from './MappedIssue'
 
 class OwaspCategoryMap
 {
@@ -33,7 +34,7 @@ class OwaspCategoryMap
         A09_Security_Logging_And_Monitoring_Failures = [],
         A10_Server_Side_Request_Forgery = [],
 
-        others= [],
+        others = [],
     })
     {
         this.A01_Broken_Access_Control = A01_Broken_Access_Control;
@@ -51,4 +52,4 @@ class OwaspCategoryMap
     }
 }
 
-module.exports = OwaspCategoryMap
+export default OwaspCategoryMap

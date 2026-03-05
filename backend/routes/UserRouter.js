@@ -30,6 +30,7 @@ router.get('/finding/:findingId/preview', checkUserAuthorization, CorrectionCont
 router.post('/finding/:findingId/apply', checkUserAuthorization, CorrectionController.applyCorrection);
 router.post('/finding/:findingId/reject', checkUserAuthorization, CorrectionController.rejectCorrection);
 
-router.post('/analysis/:analysisId/report', checkUserAuthorization, ReportController.generateReport);
+router.post('/analysis/:analysisId/report', checkUserAuthorization, ReportController.generateUserReport);
+router.get('/reports/:reportId', checkUserAuthorization, ReportController.downloadPdf )
 
 module.exports = router;
