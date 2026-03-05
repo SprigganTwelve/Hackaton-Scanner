@@ -13,23 +13,29 @@ class AuthRepository {
      * Retrieves the credentials of a user from the database.
      * This method is used during authentication to fetch necessary credentials.
      *
-     * @param {string} email - unique identifier of the user
-     * @throws {RessourceNotFound} if user does not exist
-     * @returns {Promise<{id: number, email: string, password: string}>}
+     * @param {{ email: string }} params
+     * @throws {ResourceNotFound} if user does not exist
+     * @returns {Promise<{id: string, email: string, password: string}>}
      */
     static async getCredentials({ email }) {
         const [rows] = await pool.query(
-            'SELECT id, email, password FROM account WHERE email = ?',
+            'SELECT id, email, password FROM account WHERE email = ? LIMIT 1',
             [email]
         );
 
         const user = rows[0];
+
         if (!user) {
-            throw new RessourceNotFound(`<${email}> User not found`);
+            throw new ResourceNotFound(`User with email <${email}> not found`);
         }
 
-        return { id: user.id, email: user.email, password: user.password };
+        return {
+            id: user.id,
+            email: user.email,
+            password: user.password
+        };
     }
+
 
     /**
      * Saves a new user in the database

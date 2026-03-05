@@ -1,9 +1,12 @@
 // src/pages/NewScan/NewScanPage
 import { useMemo, useRef, useState } from "react";
 import "./NewScanPage.css";
-// import { createScan } from "../../services/scans.services";
+import CodeScannerTool from "../../enums/CodeScannerTool";
+
 import { useNavigate } from "react-router-dom";
-import { addProjetWithUrl } from "../../services/projects.services";
+import { addProjetWithUrl, addProjectWithZip, scan } from "../../services/projects.services";
+
+import {useUserContext} from '../../context/UserContext'
 
 const PROVIDERS = [
   { value: "github", label: "GitHub" },
@@ -12,12 +15,16 @@ const PROVIDERS = [
 ];
 
 const TOOLS = [
-  { id: "semgrep", name: "Semgrep", tag: "SAST", desc: "Analyse statique du code" },
-  { id: "npm-audit", name: "npm audit", tag: "Dépendances", desc: "Audit des dépendances npm" },
-  { id: "trufflehog", name: "TruffleHog", tag: "Secrets", desc: "Détection de secrets" },
-  { id: "eslint-security", name: "ESLint Security", tag: "SAST", desc: "Règles de sécurité ESLint" },
-  { id: "phpstan", name: "PHPStan", tag: "Qualité", desc: "Analyse statique PHP" },
-  { id: "composer-audit", name: "composer audit", tag: "Dépendances", desc: "Audit des dépendances PHP" },
+  { id: CodeScannerTool.SEMGREP, name: "Semgrep", tag: "SAST", desc: "Analyse statique du code" },
+  { id: CodeScannerTool.NPM_AUDIT, name: "npm audit", tag: "Dépendances", desc: "Audit des dépendances npm" },
+  { id: CodeScannerTool.ESLINT, name: "ESLint", tag: "SAST", desc: "Règles de sécurité ESLint" },
+];
+
+
+const FIXED_SCAN_TOOLS = [
+  CodeScannerTool.SEMGREP,
+  CodeScannerTool.NPM_AUDIT,
+  CodeScannerTool.ESLINT,
 ];
 
 
@@ -43,17 +50,21 @@ function ToolCard({ tool, enabled, onToggle }) {
 
 export default function NewScanPage() {
   const fileInputRef = useRef(null);
+  const navigate = useNavigate()
+
+  const { setProjects } = useUserContext()
 
 	const [sourceType, setSourceType] = useState("git"); // "git" | "zip"
 	const [provider, setProvider] = useState("github");
 	const [branch, setBranch] = useState("main");
+
  	const [name, setName] = useState("");
 	const [repoUrl, setRepoUrl] = useState("");
 	const [gitAccessToken, setGitAccessToken] = useState("");
 
   const [zipFile, setZipFile] = useState(null);
 
-  const [enabledTools, setEnabledTools] = useState(() => new Set(["semgrep", "npm-audit", "trufflehog"]));
+//   const [enabledTools, setEnabledTools] = useState(() => new Set(TOOLS.map((t) => t.id)));
   const [autoDetected, setAutoDetected] = useState({
     language: "Node.js + TypeScript",
     framework: "Express.js",
@@ -84,26 +95,52 @@ export default function NewScanPage() {
   }
 
   const handleLaunch = async () => {
-	try {
-		const result = await addProjetWithUrl({
-			name,
-			repoUrl,
-			token: gitAccessToken,
-		});
-		console.log(result)
+    try {
+      let result;
+      
+      //Add project to bdd (backend)
+      if(sourceType === 'git')
+      {
+        result = await addProjetWithUrl({
+          name: repoUrl.split('/').pop()?.replace(/\.git$/, ''),
+          repoUrl,
+          token: gitAccessToken,
+        });
+      }
+      else if(sourceType === 'zip')
+      {
+        if(zipFile)
+        {
+          const formdata = new FormData()
+          formdata.append('file', zipFile)
+          result = await addProjectWithZip(formdata);
+        }
+        else{
+          alert('Vous devez upload un fichier')
+          return;
+        }
+      }
 
-		if (result?.success === false) {
-			alert(result?.message || "Création projet impossible")
-			return;
-		}
+      
 
-		alert(result?.message || "Projet créé !")
-	} 
-  catch (e) {
-		console.error(e);
-		alert("Erreur serveur lors de la création du projet")
-	}
-};
+      if (result?.success === false) {
+        alert(result?.message || "Création projet impossible")
+        return;
+      }
+
+      alert(result?.message || "Projet créé !")
+      console.log("ADD PROJECT - new: ", result.data)
+      console.log("ADD PROJECT - RESULT: ", result)
+      setProjects(projects => ([...projects, result.data]))
+
+	    const projectId  = result.data.projectId
+      navigate(`/scans?projectId=${projectId}`)
+    } 
+    catch (e) {
+      console.error(e);
+      alert("Erreur serveur lors de la création du projet")
+    }
+  };
 
   return (
     <div className="ns">
@@ -123,7 +160,9 @@ export default function NewScanPage() {
             <button
               type="button"
               className={`sourceToggle__btn ${sourceType === "git" ? "isActive" : ""}`}
-              onClick={() => setSourceType("git")}
+              onClick={() => {
+                setSourceType("git")
+              }}
             >
               <div className="sourceToggle__icon">⎇</div>
               <div className="sourceToggle__text">
@@ -228,7 +267,7 @@ export default function NewScanPage() {
           </div>
 
           <button type="button" className="btn_launchScan" onClick={handleLaunch}>
-            ▶ Cloner et lancer le scan
+            ▶ Ajouter projet
           </button>
         </div>
 
@@ -236,14 +275,23 @@ export default function NewScanPage() {
         <div className="card">
           <div className="card__title">Outils activés</div>
           <div className="tools">
-            {TOOLS.map((t) => (
-              <ToolCard key={t.id} tool={t} enabled={enabledTools.has(t.id)} onToggle={toggleTool} />
-            ))}
-          </div>
+				{
+          TOOLS.filter((t) => FIXED_SCAN_TOOLS.includes(t.id)).map((t) => (
+            <div 
+              key={t.id}
+              className="toolCard toolCard--enabled"
+              style={{ cursor: "default" }}
+            >
+              <div className="toolCard__top">
+                <div className="toolCard__name">{t.name}</div>
+                <Pill>{t.tag}</Pill>
+              </div>
+              <div className="toolCard__desc">{t.desc}</div>
+            </div>
+          ))
+        }
+			</div>
 
-          <div className="tools__footer">
-            Sélectionnez au moins 3 outils pour une couverture minimale.
-          </div>
         </div>
       </div>
     </div>

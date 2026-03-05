@@ -2,6 +2,9 @@
 const pool = require('../config/database/mysql.client');
 
 const DomainError = require('../core/errors/DomainError');
+        
+const UserProfile = require('./DTO/UserProject')
+
 
 /**
  * A repository class responsible for handling database operations related to projects.
@@ -9,22 +12,72 @@ const DomainError = require('../core/errors/DomainError');
 class ProjectRepository {
 
     /**
-     * This function adds a new project to the database for a specific user.
-     * @param {string} userId - a uniq identifier of the user
-     * @param {Object} projectData - the object containing the data of the project to be added
-     * @var {string} projectData.name - the name of the project
-     * @var {string} projectData.url - the url of the project (ex: git repository url)
-     * @var {boolean} projectData.is_uploaded - indicates if the project was uploaded as a zip file or not
+     * Add a new project for a specific user.
+     * Prevents duplicate repositories for the same user.
+     * A user cannot have two projects with the same name or the same URL.
+     *
+     * @param {string} userId - Unique identifier of the user
+     * @param {Object} projectData - Project data
+     * @param {string} projectData.name - Project name
+     * @param {string} projectData.url - Repository URL (git or zip)
+     * @param {boolean} [projectData.is_uploaded=false] - Indicates if the project was uploaded as a zip
+     * 
+     * @returns {Promise<{ userProject: UserProfile, alreadyExists?: boolean }>}
      */
-    static async addProject(userId, {name, url, is_uploaded = false})
-    {
-        const [result] = await pool.query(
-            'INSERT INTO project (name, url, account_id, is_uploaded) VALUES (?,?,?,?)',
-            [name, url, userId, is_uploaded]
-        )
+    static async addProject(userId, { name, url, is_uploaded = false }) {
 
-        return { id: result.insertId, name, url, is_uploaded };
+        // Check if project already exists (same name OR same url)
+        const [existingRows] = await pool.query(
+            `SELECT id, name, created_at, url, is_uploaded
+            FROM project
+            WHERE account_id = ?
+            AND (name = ? OR url = ?)
+            LIMIT 1`,
+            [userId, name, url]
+        );
+
+        let projectRow;
+        let alreadyExists = false;
+
+        if (existingRows.length > 0) {
+            projectRow = existingRows[0];
+            alreadyExists = true;
+        } 
+        else {
+
+            // Insert new project
+            const [result] = await pool.query(
+                `INSERT INTO project (name, url, account_id, is_uploaded)
+                VALUES (?, ?, ?, ?)`,
+                [name, url, userId, is_uploaded]
+            );
+
+            // Read inserted row (to stay consistent with DB values like created_at)
+            const [rows] = await pool.query(
+                `SELECT id, name, created_at, url, is_uploaded
+                FROM project
+                WHERE id = ?`,
+                [result.insertId]
+            );
+
+            projectRow = rows[0];
+        }
+
+        const userProject = new UserProfile({
+            projectId: projectRow.id,
+            name: projectRow.name,
+            createdAt: projectRow.created_at,
+            url: projectRow.url,
+            isUploaded: !!projectRow.is_uploaded,
+            analysisRecords: []
+        });
+
+        return alreadyExists
+            ? { userProject, alreadyExists }
+            : { userProject };
     }
+
+
 
     /**
      * Return user projects by his id

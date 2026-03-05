@@ -57,7 +57,10 @@ route: /api/users:
             output:
                 {
                     success: boolean, 
-                    message: string 
+                    message: string,
+                    data: {
+                        projectId
+                    }
                 }
         
         [POST] /add-project/zip:  Add project with zip url
@@ -68,7 +71,10 @@ route: /api/users:
             output:
                 {   
                     success: bool,
-                    message: string
+                    message: string,
+                    data: {
+                        projectId
+                    }
                 }
 
     -----SCAN PROJECT-----------

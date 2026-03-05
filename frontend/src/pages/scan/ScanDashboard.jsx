@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getScanSummary, listFindings } from "../../services/scans.services";
+import { useParams, useSearchParams } from "react-router-dom";
+import { getLastScanSummary, listFindings } from "../../services/scans.services";
 import { useNavigate } from "react-router-dom";
+import { scan } from "../../services/projects.services.js"
+
+import {useUserContext} from "../../context/UserContext";
 import "./ScanDashboard.css";
+
+import { getLatestAnalysisRecords } from "../../utils/getLatestAnalysisRecords.jsx";
+import AnalysisFinding from '../../services/DTO/AnalysisFinding'
+
+import UserProject from '../../services/DTO/UserProject.js'
+import OwaspCategoryMap from '../../services/DTO/OwaspCategoryMap.js' 
+import MappedIssue from '../../services/DTO/MappedIssue.js'
 
 import {
   ResponsiveContainer,
@@ -47,64 +57,55 @@ function SeverityPill({ sev }) {
   return <span className={`sev ${cls}`}>{label}</span>;
 }
 
-function DiagnosticsGauge({ summary }) {
-  // On calcule un “total” à afficher au centre.
-  const total = useMemo(() => {
-    const sev = summary?.severities || {};
-    return (sev.critical ?? 0) + (sev.high ?? 0) + (sev.medium ?? 0) + (sev.low ?? 0);
-  }, [summary]);
 
-  // On prend OWASP sous 2 formats possibles:
-  // 1) tableau [{code,label,count}]
-  // 2) objet {A03: 6, A05: 7}
-  const owaspList = useMemo(() => {
-    const o = summary?.owasp;
-    if (!o) return [];
-    if (Array.isArray(o)) {
-      return o.map((x) => ({
-        code: x.code,
-        label: x.label || x.code,
-        count: Number(x.count) || 0,
-      }));
-    }
-    return Object.entries(o).map(([code, count]) => ({
-      code,
-      label: code,
-      count: Number(count) || 0,
-    }));
-  }, [summary]);
 
-  const top4 = useMemo(() => {
-    const sorted = [...owaspList].sort((a, b) => b.count - a.count);
-    return sorted.slice(0, 4);
-  }, [owaspList]);
 
-  const sumTop = useMemo(() => top4.reduce((acc, x) => acc + x.count, 0), [top4]);
+/**
+ * Gauge circulaire pour afficher les diagnostics d’un projet
+ * basé sur les nouvelles données fournies.
+ *
+ * @param {Object} props
+ * @param {{
+ *   score: string,
+ *   quantityError: number,
+ *   quantityVulnerableDependences: number,
+ *   quantityRecommandedSolution: number
+ * }} props.data
+ */
+export function DiagnosticsGauge({ data }) {
+  // Calcul du total pour le centre du gauge
+  const total = useMemo(
+    () =>
+      (data?.quantityError ?? 0) +
+      (data?.quantityVulnerableDependences ?? 0) +
+      (data?.quantityRecommandedSolution ?? 0),
+    [data]
+  );
 
-  // Data pour un demi-gauge : on prend "valeur" + "reste" à modifier
+  // Construction des données pour le PieChart
   const gaugeData = useMemo(() => {
-    const value = sumTop;
-    const rest = Math.max(0, total - value);
     return [
-      { name: "top", value },
-      { name: "rest", value: rest },
+      { name: "Erreurs", value: data?.quantityError ?? 0 },
+      { name: "Dépendances vulnérables", value: data?.quantityVulnerableDependences ?? 0 },
+      { name: "Solutions recommandées", value: data?.quantityRecommandedSolution ?? 0 },
     ];
-  }, [sumTop, total]);
+  }, [data]);
 
   return (
-    <Card title="Diagnostics par Catégories" className="ds-panel">
+    <Card title={`Diagnostics (Score: ${data?.score || "-"})`} className="ds-panel">
       <div className="ds-gauge">
         <div className="ds-gauge__chart">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
                 data={gaugeData}
                 dataKey="value"
                 startAngle={180}
                 endAngle={0}
-                innerRadius="72%"
-                outerRadius="92%"
+                innerRadius="60%"
+                outerRadius="90%"
                 paddingAngle={2}
+                label={({ name, percent }) => `${name} (${Math.round(percent * 100)}%)`}
               />
               <Tooltip />
             </PieChart>
@@ -112,33 +113,31 @@ function DiagnosticsGauge({ summary }) {
 
           <div className="ds-gauge__center">
             <div className="ds-gauge__big">{total.toLocaleString()}</div>
-            <div className="ds-gauge__small">Erreurs classées par catégorie OWASP 2025</div>
+            <div className="ds-gauge__small">Total d’éléments analysés</div>
           </div>
         </div>
 
         <div className="ds-gauge__list">
-          {top4.length === 0 ? (
-            <div className="ds-muted">Aucune catégorie OWASP</div>
-          ) : (
-            top4.map((x) => {
-              const pct = total > 0 ? Math.round((x.count / total) * 100) : 0;
-              return (
-                <div key={x.code} className="ds-gaugeRow">
-                  <div className="ds-gaugeRow__left">
-                    <span className="ds-dot" />
-                    <span className="ds-gaugeRow__pct">{pct}%</span>
-                    <span className="ds-gaugeRow__label">{x.label}</span>
-                  </div>
-                  <div className="ds-gaugeRow__count">{x.count.toLocaleString()}</div>
+          {gaugeData.map((x) => {
+            const pct = total > 0 ? Math.round((x.value / total) * 100) : 0;
+            return (
+              <div key={x.name} className="ds-gaugeRow">
+                <div className="ds-gaugeRow__left">
+                  <span className="ds-dot" />
+                  <span className="ds-gaugeRow__pct">{pct}%</span>
+                  <span className="ds-gaugeRow__label">{x.name}</span>
                 </div>
-              );
-            })
-          )}
+                <div className="ds-gaugeRow__count">{x.value.toLocaleString()}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Card>
   );
 }
+
+
 
 function IntegrationGitCard() {
   const [enabled, setEnabled] = useState(true);
@@ -179,52 +178,48 @@ function IntegrationGitCard() {
   );
 }
 
-function FindingsTable({ findings }) {
+
+
+/**
+ * Component displaying a table of findings from an analysis.
+ * @param {Object} props
+ * @param {
+ *  ? {
+  *     owasp: OwaspCategoryMap,   // OWASP categories mapped to findings
+  *     analysisRecord: { 
+  *       id: string,              // Analysis record ID
+  *       project_id: number,      // ID of the project analyzed
+  *       score?: string           // Optional score: A, B, C, D
+  *     },
+  *     eslint: MappedIssue[],    // Array of ESLint findings
+  *     npmAudit: any             // NPM audit result, can be null
+  *   }
+  * } props.scanResult
+ * @param {AnalysisFinding[]} props.findings - Array of findings to display in the table.
+ * @returns {JSX.Element} The rendered findings table.
+ */
+function FindingsTable({ findings, scanResult }) {
   const [q, setQ] = useState("");
   const [sev, setSev] = useState("all");
   const [lang, setLang] = useState("all");
 
-  const filtered = useMemo(() => {
+  // Filter findings based on search, severity, and language
+  const filteredAnalysisFinding = useMemo(() => {
     return (findings || [])
       .filter((f) => {
-        const txt = `${f.title ?? ""} ${f.description ?? ""} ${f.file ?? ""} ${f.tool ?? ""} ${f.owasp ?? ""}`.toLowerCase();
+        // Concatenate searchable text from relevant fields
+        const txt = `${f.title ?? f.ruleId ?? ""} ${f.solution ?? ""} ${f.filePath ?? ""} ${f.toolId ?? ""} ${f.owaspCategory ?? ""}`.toLowerCase();
         return txt.includes(q.trim().toLowerCase());
       })
       .filter((f) => (sev === "all" ? true : (f.severity || "").toLowerCase() === sev))
-      // lang = placeholder (le backend pourra fournir language plus tard)
+      // Placeholder for future language filter
       .filter(() => (lang === "all" ? true : true));
   }, [findings, q, sev, lang]);
+  
+  const filteredSecurityScanResult = scanResult ?? {}
 
   return (
     <Card title="Diagnostics" className="ds-panel ds-tablePanel">
-      <div className="ds-tableTop">
-        <div className="ds-search">
-          <span className="ds-search__icon">⌕</span>
-          <input
-            className="ds-search__input"
-            placeholder="Rechercher fichier, règle, CVE..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-
-        <div className="ds-filters">
-          <select className="ds-select" value={sev} onChange={(e) => setSev(e.target.value)}>
-            <option value="all">Sévérité</option>
-            <option value="critical">Critique</option>
-            <option value="high">Haute</option>
-            <option value="medium">Moyenne</option>
-            <option value="low">Basse</option>
-          </select>
-
-          <select className="ds-select" value={lang} onChange={(e) => setLang(e.target.value)}>
-            <option value="all">Langages</option>
-            <option value="js">JS/TS</option>
-            <option value="php">PHP</option>
-            <option value="py">Python</option>
-          </select>
-        </div>
-      </div>
 
       <div className="ds-table">
         <div className="ds-row ds-row--head">
@@ -236,19 +231,86 @@ function FindingsTable({ findings }) {
           <div></div>
         </div>
 
-        {filtered.length === 0 ? (
+        {
+        filteredSecurityScanResult.owasp &&
+          Object.entries(filteredSecurityScanResult.owasp).map(([key, value])=>
+            (
+              <div key={f.findingId || `${f.filePath}:${f.fingerprint}:${f.ruleId}`} className="ds-row">
+                <div><SeverityPill sev={f.severity} /></div>
+                <div className="ds-diag">
+                  <div className="ds-diag__title">{f.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
+                  {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
+                </div>
+                <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
+                <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
+                <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
+                <div className="ds-actions">
+                  <button className="ds-miniBtn" type="button">Détails</button>
+                  <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
+                </div>
+              </div>
+            )
+          ) 
+        }
+
+
+        {
+         filteredSecurityScanResult.npmAudit &&  
+            Object.entries(filteredSecurityScanResult.npmAudit).map(([key, value])=>
+              (
+                <div key={f.findingId || `${f.filePath}:${f.fingerprint}:${f.ruleId}`} className="ds-row">
+                  <div><SeverityPill sev={f.severity} /></div>
+                  <div className="ds-diag">
+                    <div className="ds-diag__title">{f.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
+                    {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
+                  </div>
+                  <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
+                  <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
+                  <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
+                  <div className="ds-actions">
+                    <button className="ds-miniBtn" type="button">Détails</button>
+                    <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
+                  </div>
+                </div>
+              )
+            ) 
+        }
+
+        {
+          filteredSecurityScanResult.eslint && 
+            Object.entries(filteredSecurityScanResult.eslint).map(([key, value], index)=>
+              (
+                <div key={index} className="ds-row">
+                  <div><SeverityPill sev={f.severity} /></div>
+                  <div className="ds-diag">
+                    <div className="ds-diag__title">{value.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
+                    {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
+                  </div>
+                  <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
+                  <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
+                  <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
+                  <div className="ds-actions">
+                    <button className="ds-miniBtn" type="button">Détails</button>
+                    <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
+                  </div>
+                </div>
+              )
+          ) 
+        }
+
+        {filteredAnalysisFinding.length === 0 ? (
           <div className="ds-empty">Aucun résultat</div>
         ) : (
-          filtered.map((f) => (
-            <div key={f.id || `${f.file}:${f.line}:${f.title}`} className="ds-row">
-              <div><SeverityPill sev={f.severity} /></div>
+          filteredAnalysisFinding.map((value) => (
+            <div key={f.findingId || `${value.filePath}:${value.fingerprint}:${value.ruleId}`} className="ds-row">
+              <div><SeverityPill sev={value.severity} /></div>
               <div className="ds-diag">
-                <div className="ds-diag__title">{f.title || "Finding"}</div>
-                <div className="ds-diag__desc">{f.description || ""}</div>
+                <div className="ds-diag__title">{value.title ?? value.ruleId ?? "Finding"}</div>
+                <div className="ds-diag__desc">{value.solution ?? ""}</div>
               </div>
-              <div className="ds-file">{f.file}{f.line ? `:${f.line}` : ""}</div>
-              <div className="ds-tool">{f.tool || "—"}</div>
-              <div className="ds-owasp">{f.owasp || "—"}</div>
+              <div className="ds-file">{value.filePath}{value.line ? `:${f.line}` : ""}</div>
+              <div className="ds-tool">{value.toolId ?? "—"}</div>
+              <div className="ds-owasp">{value.owaspCategory ?? "—"}</div>
               <div className="ds-actions">
                 <button className="ds-miniBtn" type="button">Détails</button>
                 <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
@@ -256,65 +318,118 @@ function FindingsTable({ findings }) {
             </div>
           ))
         )}
+
+
       </div>
     </Card>
   );
 }
 
+
+
+
 export default function ScanDashboard() {
-  const { scanId } = useParams();
-  const [summary, setSummary] = useState(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const { projects = [], selectedProjectId } = useUserContext();
+  
+  const [currentProject, setCurrentProject] = useState(null);
+  const [kpi, setKpi] = useState(null);
+  const [scanResult, setScanResult] = useState(null);
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
-  const navigate = useNavigate();
+  const [scanning, setScanning] = useState(false);
 
+  // --- Selection du projet ---
   useEffect(() => {
-    if (!scanId) return;
+    if (!projects || projects.length === 0) return;
+
+    const projectId = searchParams.get('projectId') ?? selectedProjectId?.trim();
+    const foundProject = projects.find(p => String(p.projectId) === String(projectId)) ?? projects[projects.length - 1];
+    
+    setCurrentProject(foundProject);
+  }, [projects, searchParams, selectedProjectId]);
+
+  // --- Fetch KPIs et findings ---
+  useEffect(() => {
+    if (!currentProject?.projectId) return;
+
     setLoading(true);
     setErr(null);
 
-    Promise.all([getScanSummary(scanId), listFindings(scanId)])
-      .then(([s, f]) => {
-        setSummary(s);
-        setFindings(Array.isArray(f) ? f : []);
-      })
-      .catch((e) => setErr(e))
-      .finally(() => setLoading(false));
-  }, [scanId]);
+    const latestAnalysis = getLatestAnalysisRecords([currentProject])[0]?.latestAnalysis;
 
+    Promise.all([
+      getLastScanSummary(currentProject.projectId),
+      listFindings(latestAnalysis?.id)
+    ])
+      .then(([kpiData, findingsData]) => {
+        setKpi(kpiData);
+        setFindings(Array.isArray(findingsData) ? findingsData : []);
+      })
+      .catch(e => setErr(e))
+      .finally(() => setLoading(false));
+  }, [currentProject]);
+
+  // --- Scan ---
+  useEffect(() => {
+    async function makeScan() {
+      if (!scanning || !currentProject?.projectId) return;
+
+      try {
+        const { results } = await scan(
+          currentProject.projectId,
+          currentProject.url,
+          currentProject.isUploaded
+        );
+        setScanResult(results);
+      }
+      catch (e) {
+        setErr(e);
+      } finally {
+        setScanning(false);
+      }
+    }
+    makeScan();
+  }, [scanning, currentProject]);
+
+  // --- Loading / Errors ---
   if (loading) return <div className="ds-loading">Chargement…</div>;
   if (err) return <div className="ds-loading">Erreur: {String(err.message || err)}</div>;
-  if (!summary) return <div className="ds-loading">Aucune donnée</div>;
+  if (!kpi) return <div className="ds-loading">Aucune donnée</div>;
 
-  // KPIs : on supporte plusieurs shapes possibles (mock vs back final)
-  const grade = summary.grade ?? summary.scoreGrade ?? "—";
-  const totalErrors = summary?.stats?.totalErrors ?? summary?.errorsDetected ?? 0;
-  const vulnerableDeps = summary?.stats?.vulnerableDependencies ?? summary?.vulnerableDependencies ?? 0;
-  const recFixes = summary?.stats?.recommendedFixes ?? summary?.recommendedFixes ?? 0;
+  // --- KPIs ---
+  const grade = kpi.score ?? '??';
+  const totalErrors = kpi.quantityError ?? 0;
+  const totalVulnerableDeps = kpi.quantityVulnerableDependences ?? 0;
+  const totalRecommandedSolution = kpi.quantityRecommandedSolution ?? 0;
 
   return (
     <div className="ds">
       <div className="ds-topbar">
         <div className="ds-topbar__title">Dashboard</div>
         <div className="ds-topbar__actions">
-          <button className="ds-topBtn ds-topBtn--primary" type="button" onClick={() => navigate("/new-scan")}>Nouveau Scan +</button>
+          <button className="ds-topBtn ds-topBtn--primary" type="button">Générer rapport</button>
+          <button className="ds-topBtn ds-topBtn--primary" type="button" onClick={() => setScanning(true)}>Scan</button>
+          <button className="ds-topBtn ds-topBtn--primary" type="button" onClick={() => navigate("/new-project")}>Ajouter nouveau projet +</button>
         </div>
       </div>
 
       <div className="ds-kpis">
         <KpiCard title="Score de sécurité globale" value={grade} />
-        <KpiCard title="Erreurs détectées" value={totalErrors} badge={summary?.severities?.critical ? "critical" : null} />
-        <KpiCard title="Dépendances vulnérables" value={vulnerableDeps} sub="+5 nouveaux" />
-        <KpiCard title="Correctifs recommandés" value={recFixes} sub="+5 nouveaux" />
+        <KpiCard title="Erreurs détectées" value={totalErrors} badge={totalErrors > 40 ? 'Critical' : null} />
+        <KpiCard title="Dépendances vulnérables" value={totalVulnerableDeps} sub="Infos générales" />
+        <KpiCard title="Correctifs recommandés" value={totalRecommandedSolution} sub="Applicable" />
       </div>
 
       <div className="ds-mainGrid">
-        <DiagnosticsGauge summary={summary} />
+        <DiagnosticsGauge data={kpi} />
         <IntegrationGitCard />
       </div>
 
-      <FindingsTable findings={findings} />
+      <FindingsTable findings={findings} scanResult={scanResult} />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 const pool = require('../config/database/mysql.client');
 
-const UserProfile = require('./DTO/User.profile');
-const UserProject = require('./DTO/User.project');
+const UserProject = require('./DTO/UserProject');
 const AnalysisFinding = require('./DTO/AnalysisFinding');
 const AnalysisReport = require('./DTO/AnalysisReport');
 
@@ -23,11 +22,16 @@ class UserRepository {
             [userId]
         );
 
-        if (!rows.length) 
+        if (!rows.length)
+        {
+            console.log('Access Token undifined or null in bdd')
             return null;
+        }
 
         return CryptoSecurityService.decode(rows[0].git_access_token);
     }
+
+
 
     /**
      * Retrieve basic user info
@@ -52,12 +56,16 @@ class UserRepository {
         };
     }
 
+
+
     /**
      * Not implemented yet (kept intentionally)
      */
     saveScanResult(userId, { score, file_path, pattern_type, rule_id }) {
         throw Error('[saveScanResult] Not implemented Yet');
     }
+
+
 
     /**
      * Return user profile DTO
@@ -76,28 +84,64 @@ class UserRepository {
         });
     }
 
+
+
+
+
     /**
-     * Fetch all projects belonging to a user
+     * Fetch all projects belonging to a user with their analysis records
      * @param {string} userId
      * @returns {Promise<UserProject[]>}
      */
     static async getUserProjects(userId) {
-        const [rows] = await pool.query(
+        // Project fetching projets
+        const [projects] = await pool.query(
             `SELECT id, name, created_at, url, is_uploaded
-             FROM project
-             WHERE account_id = ?
-             ORDER BY created_at DESC`,
+                FROM project
+                WHERE account_id = ?
+                ORDER BY created_at DESC
+            `,
             [userId]
         );
 
-        return rows.map(project => new UserProject({
-            projectId: project.id,
-            name: project.name,
-            createdAt: project.created_at,
-            url: project.url,
-            isUploaded: !!project.is_uploaded
-        }));
+        if (!projects || projects.length === 0) return [];
+
+        // Analysis fetching
+        const projectIds = projects.map(p => p.id);
+        let analyses = [];
+        if (projectIds.length > 0) {
+            const [rows] = await pool.query(
+                `SELECT id AS analysisId, project_id AS projectId, status, started_at AS startedAt, score
+                FROM analysis_record
+                WHERE project_id IN (?)`,
+                [projectIds]
+            );
+            analyses = rows;
+        }
+
+        // project - analysis : Mapping
+        return projects.map(project => {
+            const projectAnalyses = analyses
+                .filter(a => a.projectId === project.id)
+                .map(a => ({
+                    id: a.analysisId,
+                    status: a.status,
+                    startedAt: a.startedAt,
+                    score: a.score
+                }));
+
+            return new UserProject({
+                    projectId: project.id,
+                    name: project.name,
+                    createdAt: project.created_at,
+                    url: project.url,
+                    isUploaded: !!project.is_uploaded,
+                    analysisRecords: projectAnalyses
+                });
+        });
     }
+
+
 
     /**
      * Retrieve analyses for a project (with tools)
@@ -167,7 +211,7 @@ class UserRepository {
 
     /**
      * Retrieve all findings of an analysis
-     * @return { AnalysisFinding[] }
+     * @return { Promise<AnalysisFinding[] > }
      */
     static async getAnalysisFindings(analysisId) {
         const [rows] = await pool.query(

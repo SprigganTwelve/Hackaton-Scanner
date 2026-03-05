@@ -1,7 +1,10 @@
 
 
 const pool = require('../config/database/mysql.client')
+
 const AnalysisToolRepository = require('./AnalysisToolsRepository')
+
+const CodeScannerTools = require('../enums/CodeScannerTool')
 
 //This function is used for reserved analysis record bdd operations
 class AnalysisRecordRepository
@@ -51,6 +54,52 @@ class AnalysisRecordRepository
                 [analysis_record_id, toolId]
             )
         }
+    }
+
+
+    /**
+     * Get KPI stats for a specific analysis
+     * @param {number} analysisId - The ID of the analysis record
+     * @returns {Promise<{score: string, quantityError: number, quantityVulnerableDependences: number, quantityRecommandedSolution: number}>}
+     */
+    static async getKPI(analysisId) {
+        // Get score of the analysis
+        const [scoreRows] = await pool.query(
+            'SELECT score FROM analysis_record WHERE id = ?',
+            [analysisId]
+        );
+        const score = scoreRows[0]?.score ?? null;
+
+        // Count total findings (errors) for this analysis
+        const [errorRows] = await pool.query(
+            'SELECT COUNT(*) AS total FROM finding WHERE analysis_record_id = ?',
+            [analysisId]
+        );
+        const quantityError = errorRows[0]?.total ?? 0;
+
+        // Count vulnerable dependencies (npm audit findings)
+        const [vulnDepRows] = await pool.query(
+            'SELECT COUNT(*) AS total FROM finding WHERE analysis_record_id = ? AND tool_id = ?',
+            [analysisId, CodeScannerTools.NPM_AUDIT]
+        );
+        const quantityVulnerableDependences = vulnDepRows[0]?.total ?? 0;
+
+        // Count recommended solutions applied to findings of this analysis
+        const [solutionRows] = await pool.query(
+            `SELECT COUNT(*) AS total 
+             FROM solution s
+             JOIN finding f ON s.finding_id = f.id
+             WHERE f.analysis_record_id = ?`,
+            [analysisId]
+        );
+        const quantityRecommandedSolution = solutionRows[0]?.total ?? 0;
+
+        return {
+            score,
+            quantityError,
+            quantityVulnerableDependences,
+            quantityRecommandedSolution
+        };
     }
 }
 

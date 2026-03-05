@@ -17,7 +17,7 @@ export default function LoginForm() {
       const ok = result?.success === true || !!result?.token;
       
       if (ok) 
-        navigate("/new-scan");
+        navigate("/new-project");
       else alert(result?.message || "Email ou mot de passe invalide");
 
     }

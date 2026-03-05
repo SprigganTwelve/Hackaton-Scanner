@@ -30,7 +30,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--stroke2);
-  background: rgba(0,0,0,0.12);
+  background: rgba(87, 78, 78, 0.444);
   color: var(--text);
   cursor: pointer;
 }

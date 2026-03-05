@@ -1,20 +1,44 @@
-
-
 const pool = require('../config/database/mysql.client');
 
 class DataBaseTransactionManager {
+
     /**
-     * Handle callback function that contains database operations to be executed as a transaction
-     * @param {function({connexion, commit, rollback})} transactionFunction - the callback function that contains the database operations to be executed as a transaction. This function receives an object as a parameter that contains the following properties:
+     * Execute database operations inside a transaction
+     * 
+     * @param {function({connexion, commit, rollback}): Promise<any>} transactionFunction
+     * Callback containing the DB operations to execute atomically.
      */
     static async executeTransaction(transactionFunction) {
+
         const connexion = await pool.getConnection();
-        connexion.beginTransaction();
-        transactionFunction({
-            connexion,
-            commit: connexion.commit,
-            rollback: connexion.rollback
-        });
+        try {
+            await connexion.beginTransaction();
+
+            const result = await transactionFunction({
+
+                connexion,
+
+                commit: async () => {
+                    await connexion.commit();
+                    connexion.release();
+                },
+
+                rollback: async () => {
+                    await connexion.rollback();
+                    connexion.release();
+                }
+
+            });
+
+            return result;
+
+        }
+        catch (error) {
+
+            await connexion.rollback();
+            connexion.release();
+            throw error;
+        }
     }
 }
 

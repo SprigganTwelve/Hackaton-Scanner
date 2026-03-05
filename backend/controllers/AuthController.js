@@ -20,7 +20,9 @@ const AuthJwtPayload = require('../utils/AuthJwtPayload.js')
 exports.login = async (req, res) => {
     try{
         const { email, password } = req.body;
-        
+        // console.log("-----------------LOGIN!! DATA ----------------")
+        // console.log("LGOIN!! DATA: ", {email, password})
+
         //Data validation
         if(!email || !password)
             return res.json({
@@ -28,19 +30,29 @@ exports.login = async (req, res) => {
                 message: "S'il vous plaît, verifiez les chanps & données de la requête"
             })
         
+        const  credentials = await AuthRepository.getCredentials({ email: email.trim() })
+        // console.log("LOGIN CREDENTIALS: ", credentials)
+
         //Password Validation
-        const { id: userId, password: hashedPassword } = await AuthRepository.getCredentials({ email: email.trim() })
+        const { 
+            id: userId,
+            password: hashedPassword
+        } = credentials;
+        
         const isPasswordOkay = await PasswordHasher.compare(password, hashedPassword)
+        // console.log("LOGIN CREDENTIALS: ", {userId, password})
 
         if(!isPasswordOkay)
             return res.json({sucess: false, message: "mot de passe invalide"}).status(401)
+
 
         //Clear previous blacklisted token
         await BlacklistedTokenRepository.deleteMany({ userId })
 
         //JWT-Security validation
-        const playload = new AuthJwtPayload({sub: userId})
-
+        const playload = new AuthJwtPayload({ userId })
+        // console.log("LOGIN Playload: ", playload)
+        
         const token = jwt.sign(
             { ...playload }, 
             getJwtSecret(),
@@ -49,6 +61,7 @@ exports.login = async (req, res) => {
             }
         );
 
+        console.log("-----------------LOGIN!! DATA ----------------")
         return res.json({
             token,
             success: true,

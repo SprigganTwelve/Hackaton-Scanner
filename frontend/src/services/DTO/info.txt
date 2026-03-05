@@ -1,0 +1,2 @@
+Ce fichier decrit le role du repertoire courant
+- Ce repertoire Contient les 'data transfer object'

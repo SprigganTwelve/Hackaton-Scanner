@@ -1,49 +1,74 @@
-
-const { execSync } = require('child_process');
 const UserRepository = require('../repositories/UserRepository');
 
+
 /**
- * An utilisty for git repository related operations such as checking the existing of a repository ...
+ * Utility class for Git repository related operations
+ * such as checking if a GitHub repository exists.
  */
 class GitRepoHelper {
 
-    /** Check for repository existance **/
-    static async repoExists(url, userId, token){
-        const [, owner,repo ] = url.match(/github\.com[:\/]([^\/]+)\/([^\/]+)(?:\.git)?$/) || [];
-        if(!owner || !repo)
+    /**
+     * Check if a GitHub repository exists and is accessible
+     * @param {string} url - GitHub repository URL
+     * @param {string} userId - User identifier
+     * @param {string|null} token - Optional GitHub access token
+     * @returns {Promise<boolean>}
+     */
+    static async repoExists(url, userId, token) {
+
+        // Extract owner and repo from URL
+        const match = url.match(/github\.com[:\/]([^\/]+)\/([^\/]+?)(?:\.git)?$/);
+        if (!match) 
             return false;
 
-        const res = await fetch('https://api.github.com/repos/${owner}/${repo}')
+        const owner = match[1];
+        const repo = match[2];
 
-        if(res.status === 200)
-            return true;
-        /**
-         * An error occured due to the repository beeing private,
-         * so we will try to access it using the access token of the user
-        **/
-        if(res.status === 403) //Access dinied
-        {
-            const access_token = token ?? await UserRepository.getUserAccessToken(userId)
-            if(!access_token)
-                return
-            const authRes = await fetch(
-                'https://api.github.com/repos/${owner}/${repo}', 
-                {
-                    headers: { Authorization:`token ${access_token}`}
-                }
-            )
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
-            //everything went well, the repository is private but we have access to it
-            if(authRes.status === 200)
+        try {
+            const res = await fetch(apiUrl);
+
+            // Public repository
+            if (res.status === 200) {
                 return true;
+            }
 
-            return false; //the repository is private and we don't have access to it
+            /**
+             * If repo is private GitHub may return:
+             * 404 (not found) or 403 (forbidden)
+             */
+            if (res.status === 403 || res.status === 404) {
+
+                // Try with user access token
+                const access_token = token ?? await UserRepository.getUserAccessToken(userId);
+
+                if (!access_token) {
+                    return false;
+                }
+
+                const authRes = await fetch(apiUrl, {
+                    headers: {
+                        Authorization: `token ${access_token}`
+                    }
+                });
+
+                // Private repo but accessible with token
+                if (authRes.status === 200) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            return false;
+
         }
-        
-        return false; //the repository doesn't exist
-        
+        catch (error) {
+            console.error("GitHub API error:", error.message);
+            return false;
+        }
     }
-
 }
 
 module.exports = GitRepoHelper;

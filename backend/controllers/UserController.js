@@ -36,7 +36,7 @@ exports.addProjectWithURL = async (req, res) => {
     /** @type {AuthPlayload} authPayload */
     const authPayload = req.user;
 
-    if( !name && 
+    if(
         !repoUrl 
     ){
         return res.status(400).json({ 
@@ -45,7 +45,9 @@ exports.addProjectWithURL = async (req, res) => {
         });
     }
 
+
     //Check repository existance
+    console.log({repoUrl, userId: authPayload.sub, token})
     const doesRepoExixt = await GitRepoHelper.repoExists(repoUrl, authPayload.sub, token)
     if(!doesRepoExixt){
         return res.status(400).json({
@@ -56,8 +58,26 @@ exports.addProjectWithURL = async (req, res) => {
     
     try {
         //Save the project in the database
-        await ProjectRepository.addProject(authPayload.sub, {name, url: repoUrl})
-        return res.status(200).json({ success: true, message: 'Projet ajouté avec succès'})
+        const {alreadyExists, userProject} = await ProjectRepository.addProject(
+            authPayload.sub, {
+                name, url: repoUrl
+            }
+        )
+
+        if(alreadyExists)
+        {
+            return res.json({
+                success: true,
+                message: "Projet déjà sauvegarder en bdd",
+                data: userProject
+            })
+        }
+
+        return res.status(200).json({ 
+            success: true,
+            message: 'Projet ajouté avec succès',
+            data: userProject
+        })
     }
     catch (error) {
         //Log the error & return a messg to the client
@@ -79,9 +99,10 @@ exports.addProjectWithURL = async (req, res) => {
 exports.addProjectWithZip = async (req, res) => {   
     try{
         //Data validation
-        const file = req.file;
         /** @var {AuthPlayload} authPayload */
         const authPayload = req.user;
+        
+        // console.log("Fichier Zip uploaded: ", file)
         if (!file || !file.originalname.endsWith('.zip'))
         {
             console.log('Missing or invalid Zip File')
@@ -89,22 +110,40 @@ exports.addProjectWithZip = async (req, res) => {
         }
 
         const zipFileName = Date.now() + '_' + file.originalname.replace(/\s+/g, '_');                          //the name of the file in a unique format to avoid any conflicts
-        const destPath = path.join(BASIC_UPLOADING_FOLDER_PATH, `${authPayload.sub}/projects/${zipFileName}`);  //final folder destination where the file will be unzipped
+        
+        const userProjectPath  = `${authPayload.sub}/projects/${zipFileName}`
+        const destPath = path.join(BASIC_UPLOADING_FOLDER_PATH, userProjectPath );  //final folder destination where the file will be unzipped
 
         //Save the project in the database & decompress the zip file in the same time, 
         // if any error occurs we will rollback the transaction and delete any decompressed files if needed
-        DataBaseTransactionManager.executeTransaction(async({commit, rollback})=>{
+        await DataBaseTransactionManager.executeTransaction(async({commit, rollback})=>{
             try{
-                await ProjectRepository.addProject(authPayload.sub, {
+                const { id: projectId, alreadyExists, userProject } = await ProjectRepository.addProject(authPayload.sub, {
                     name: zipFileName,
-                    url: destPath,
+                    url: userProjectPath ,
                     is_uploaded: true
                 })
+
+                console.log('USER PROJECT---', userProject)
+
+                if(alreadyExists)
+                {
+                    console.log("Repo elready exists in bdd, so we return a positive response")
+                    return res.json({
+                        message: "Repo déjà exitant ou upload!!",
+                        success: true,
+                        data: userProject
+                    })
+                }
+
+                console.log("-----Save zip line----")
                 await ZipProcessor.saveZipFolder(file.buffer, destPath)
                 await commit();
+
                 return res.status(200).json({ 
                     success: true,
-                    message: 'Projet ajouté avec succès'
+                    message: 'Projet ajouté avec succès',
+                    data: userProject
                 })
             }
             catch(error)
@@ -214,10 +253,6 @@ exports.scanZip = async (req, res) => {
     //Data validation
     const { projectId, scanTools } = req.body;
 
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Fichier ZIP manquant' });
-    }
-
     if(!Array.isArray(scanTools) || scanTools.length > 0){
         return res.status(400).json({ 
             success: false,
@@ -257,10 +292,11 @@ exports.scanZip = async (req, res) => {
             project.name, user.sub, scanTools
         );
         
+        let results = {};
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async(commit,rollback )=>{
             try{
-                await RecordScanHelper.execute(scanResult)
+                results  = await RecordScanHelper.execute(scanResult)
                 commit()
             }
             catch(error)
@@ -269,7 +305,8 @@ exports.scanZip = async (req, res) => {
                 rollback()
                 return res.json({
                     success: false,
-                    message: 'Scan échoué'
+                    message: 'Scan échoué',
+                    data: {}
                 }).status(400)
             }
         })

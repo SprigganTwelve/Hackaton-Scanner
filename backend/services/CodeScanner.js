@@ -168,6 +168,7 @@ class CodeScanner {
                         const issue = new MappedIssue({
                             check_id: `${advisory.id}`,
                             file_path,
+                            title: advisory.title,
                             start_index: null,
                             end_index: null,
                             message: advisory.title,
@@ -197,6 +198,7 @@ class CodeScanner {
 
                     eslintResults.push(new MappedIssue({
                         check_id: msg.ruleId,
+                        title:  ruleId?.replace(/-/g, " ")?.replace(/\b\w/g, (c) => c.toUpperCase()) ?? null,
                         file_path: file.filePath,
                         start_index: msg.line,
                         end_index: msg.endLine,

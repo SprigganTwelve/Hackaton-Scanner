@@ -1,6 +1,7 @@
 
 
 const UserRepository = require('../repositories/UserRepository');
+const AnalysisRecordRepository = require('../repositories/AnalysisRecordRepository')
 const AuthPlayload = require('../utils/AuthJwtPayload');
 
 
@@ -32,7 +33,8 @@ exports.getUserProjects = async (req, res) => {
         const userProjects = await UserRepository.getUserProjects(authPayload.sub)
         return res.status(200).json({
             success: true,
-            data: userProjects
+            data: userProjects,
+            message: 'Opération réussite'
         })
     }
     catch(error)
@@ -44,6 +46,8 @@ exports.getUserProjects = async (req, res) => {
         })
     }
 }
+
+
 
 exports.getProjectAnalysis = async (req, res) => {
     try{
@@ -77,7 +81,8 @@ exports.getAnalysisFindings = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            data: findings
+            data: findings,
+            message: 'Opération exécuté avec succès'
         });
     }
     catch(error)
@@ -115,7 +120,29 @@ exports.getAnalysisReports = async (req, res) => {
 
 
 exports.getKPIStats = async(req, res)=>{
+    try {
+        const { analysisId } = req.params;
+        const {
+            score,
+            quantityError,
+            quantityVulnerableDependences,
+            quantityRecommandedSolution
+        } = await AnalysisRecordRepository.getKPI(analysisId)
 
+        return res.json({success: true, data: {
+            score,
+            quantityError,
+            quantityVulnerableDependences,
+            quantityRecommandedSolution
+        } })
+    }
+    catch (error) {
+                console.log("Something went wrong !! ", error)
+        return res.status(500).json({
+            success: false,
+            message: 'Une erreur est survenue lors de la récupération des KPI de l\'analyse de l\'utilisateur'
+        });
+    }
 }
 
 

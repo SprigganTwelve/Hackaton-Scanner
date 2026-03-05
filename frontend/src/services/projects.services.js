@@ -6,15 +6,34 @@ import * as mock from "./projects.mock";
 //For JS-DOC
 import OwaspCategoryMap from './DTO/OwaspCategoryMap'
 import  MappedIssue from './DTO/MappedIssue'
-
-
-
+import  UserProject from './DTO/UserProject'
+import  CodeScannerTool from '../enums/CodeScannerTool'
 const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
 
 
 export async function listProjects() {
-  if (useMocks) return mock.listProjects();
-  return await api.get("/api/users/projects");
+  // if (useMocks) return mock.listProjects();
+  try{
+      const response = await api.get("/api/users/projects")
+      console.log("Log project: ", response)
+      /**
+       * @type { {
+       *  success: boolean,
+       *  data : UserProject[]
+       * }}
+       */
+      const {
+        success,
+        data,
+        message
+      } = response;
+
+      return { success, data, message};
+  }
+  catch(error){
+    console.log('Something went wrong: ', error)
+    return { success: false, message: 'Quelque chose d\'inattendue est arrivée '}
+  }
 }
 
 
@@ -35,12 +54,20 @@ export async function addProjetWithUrl({ name, repoUrl, token })
       { name, repoUrl, token }
     );
     
+    /**
+     * @type {
+     *  success?: boolean,
+     *  message?: string,
+     *  data: UserProject
+     * }
+     */
     const { 
-      success,
-      message
+      success = true,
+      message,
+      data
     } = response
   
-    return { success, message }
+    return { success, message, data }
   }
   catch(error)
   {
@@ -60,15 +87,22 @@ export async function addProjetWithUrl({ name, repoUrl, token })
 export async function addProjectWithZip(formData)
 {
   try{
-    const response = await api.post('/api/users/add-project/zip', {
-      body: formData, 
-    })
+    const response = await api.post('/api/users/add-project/zip', formData)
+      
+    /**
+     * @type {
+     *  success?: boolean,
+     *  message?: string,
+     *  data: UserProject
+     * }
+     */
     const { 
       success,
-      message
+      message,
+      data
     } = response
   
-    return { success, message }
+    return { success, message, data }
   }
   catch(error)
   {
@@ -85,7 +119,7 @@ export async function addProjectWithZip(formData)
  * @param {Object} params - Parameters for the scan
  * @param {string} params.projectId - The ID of the project to scan
  * @param {string} params.repoUrl - The git repository URL or ZIP file location
- * @param {string[]} params.scanTools - List of tools to run (e.g., ['eslint','semgrep'])
+ * @param {?string[]} params.scanTools - List of tools to run (e.g., ['eslint','semgrep'])
  * @param {boolean} [params.isZip=false] - Whether the project is uploaded as a ZIP file
  * @returns {Promise<{
  *   success: boolean,
@@ -102,19 +136,35 @@ export async function addProjectWithZip(formData)
  *   }
  * }>} - Returns scan results or failure message
  */
-export async function scan({ projectId, repoUrl, scanTools, isZip = false }) {
+export async function scan({ 
+  projectId,
+  repoUrl,
+  scanTools,
+  isZip = false
+}) {
   try {
     // Determine API endpoint based on whether the project is a ZIP upload or a git repo URL
-    const uri = !isZip ? '/api/add-project/url' : '/api/users/add-project/zip';
+    const uri = !isZip ? '/api/users/add-project/url' : '/api/users/add-project/zip';
+
+    console.log("MAKING SCAN",{  projectId,
+      repoUrl,
+      scanTools,
+    })
+
 
     // Call the backend API to initiate the scan
     const response = await api.post(uri, {
-      body: { projectId, repoUrl, scanTools }
+      projectId,
+      repoUrl: repoUrl ?? "", 
+      scanTools:  scanTools ?? [
+          CodeScannerTool.SEMGREP,
+          CodeScannerTool.NPM_AUDIT,
+          CodeScannerTool.ESLINT,
+      ] 
     });
 
     // Destructure response safely, with fallback empty objects/arrays
     const {
-      success,
       message,
       results = {} // fallback if results is undefined
     } = response;
@@ -126,10 +176,11 @@ export async function scan({ projectId, repoUrl, scanTools, isZip = false }) {
       npmAudit = null           // NPM audit result
     } = results;
 
+
     const { id, project_id, score } = analysisRecord;
 
     return {
-      success,
+      success: true,
       message,
       results: {
         owasp,

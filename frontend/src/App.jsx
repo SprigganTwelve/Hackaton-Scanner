@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
-import NewScanPage from "./pages/NewScan/NewScanPage";
+import AddProjectPage from "./pages/NewScan/NewScanPage";
 import FindingsPage from "./pages/Findings/Findings";
 import ScanDashboard from "./pages/scan/ScanDashboard";
 import ReportsPage from "./pages/Reports/ReportsPage"
@@ -24,17 +24,17 @@ const router = createBrowserRouter([
     path: "/",
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/new-scan" replace /> },
+      { index: true, element: <Navigate to="/new-project" replace /> },
 
-      { path: "new-scan", element: <NewScanPage /> },
+      { path: "new-project", element: <AddProjectPage /> },
 
-      { path: "scans/:scanId", element: <ScanDashboard /> },
+      { path: "scans", element: <ScanDashboard /> },
 
-      { path: "scans/:scanId/findings", element: <FindingsPage /> },
+      { path: "scans/:projectId/:analysisId/findings", element: <FindingsPage /> },
 
-	    { path: "scans/:scanId/reports", element: <ReportsPage /> },
+	    { path: "scans/:projectId/reports", element: <ReportsPage /> },
       
-      { path: "scans/:scanId/fixes", element: <FixesPage /> },
+      { path: "scans/:projectId/fixes", element: <FixesPage /> },
     ],
   },
 ]);

@@ -18,7 +18,10 @@ export async function login(email, password) {
 }
 
 
-export async function register({ name, email, password, git_url, git_access_token }) {
+export async function register({ 
+  name, email, password,
+  git_url, git_access_token 
+}) {
   const data = await api.post("/api/auth/register", {
     name,
     email,

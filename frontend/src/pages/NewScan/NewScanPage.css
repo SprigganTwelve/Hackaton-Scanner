@@ -248,6 +248,10 @@
   background: rgba(0,0,0,0.10);
 }
 
+.btn_launchScan{
+	margin-top: 10px;
+}
+
 .tools{
   display: grid;
   gap: 10px;

@@ -12,16 +12,18 @@ class MappedIssue
         severity,
         code,
         check_id,
-        fingerprint
+        fingerprint,
+        title = null,
     })
     {
-        this.check_id = check_id,
+        this.title = title;
+        this.check_id = check_id;
         this.file_path = file_path;
         this.start_index = start_index;
         this.end_index = end_index;
         this.severity = severity;
         this.message = message;
-        this.code = code,
+        this.code = code
         this.fingerprint = fingerprint
     }
 }

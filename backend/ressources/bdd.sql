@@ -79,6 +79,7 @@ CREATE TABLE analysis_record(
 -- =========================
 -- ANALYSIS TOOLS (M:N)
 -- =========================
+
 CREATE TABLE analysis_tools(
    analysis_record_id INT NOT NULL,
    tool_id INT NOT NULL,

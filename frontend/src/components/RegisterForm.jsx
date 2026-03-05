@@ -27,11 +27,11 @@ export default function RegisterForm() {
 
 	try {
 		const result = await register({
-		name,
-		email,
-		password,
-		git_url: github,
-		git_access_token: "",
+      name,
+      email,
+      password,
+      git_url: github,
+      git_access_token: "",
 		});
 
 		console.log("REGISTER RESULT =", result);

@@ -76,7 +76,7 @@ export default function ReportsPage() {
   }, []);
 
   const monthOptions = useMemo(() => {
-    const keys = Array.from(new Set(reports.map((r) => monthKey(r.date))));
+    const keys = Array.from(new Set((reports??[]).map((r) => monthKey(r.date))));
     keys.sort((a, b) => (a < b ? 1 : -1)); // desc
     return keys;
   }, [reports]);

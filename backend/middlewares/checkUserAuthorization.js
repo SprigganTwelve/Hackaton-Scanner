@@ -64,13 +64,10 @@ exports.checkUserAuthorization = async (req, res, next) => {
         }
 
         // Attach user payload
-        req.user = new AuthJwtPayload({
-            sub: decoded.sub,
-            issue_at: decoded.iat
-        })
+        /** @type {AuthJwtPayload} */
+        req.user = decoded
 
         return next()
-
     }
     catch (error) {
         console.error("Authorization middleware error:", error)
