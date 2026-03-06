@@ -32,7 +32,7 @@ export default function AppLayout() {
 
 			// si rien sélectionné, on prend le 1er
 			if (!selectedProjectId && items.length) {
-				const firstId = String(items[0].id ?? items[0].projectId ?? items[0].name);
+				const firstId = String(items[0].id ?? items[0].projectId ?? items[0].originalName);
 				setSelectedProjectId(firstId)
 				localStorage.setItem("projectId", firstId);
 			}
@@ -44,12 +44,14 @@ export default function AppLayout() {
 		try {
 			// ⚠️ adapte l’URL à celle du backend
 			await fetch("/api/logout", {
-			method: "POST",          
-			credentials: "include",  // important si session/cookies
+				method: "POST",          
+				credentials: "include",  // important si session/cookies
 			});
-		} catch (e) {
+		}
+		catch (e) {
 			console.error("Logout error:", e);
-		} finally {
+		}
+		finally {
 			navigate("/login"); 
 		}
 	}
