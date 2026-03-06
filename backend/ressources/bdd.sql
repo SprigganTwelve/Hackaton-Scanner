@@ -67,7 +67,7 @@ CREATE TABLE rule(
 -- =========================
 CREATE TABLE analysis_record(
    id INT AUTO_INCREMENT PRIMARY KEY,
-   score ENUM('A','B','C','D') DEFAULT NULL,
+   score ENUM('A','B','C','D', 'UNDETERMINED') DEFAULT NULL,
    started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
    status ENUM('PENDING','RUNNING','COMPLETED','FAILED') DEFAULT 'PENDING',
 

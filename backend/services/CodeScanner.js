@@ -20,7 +20,17 @@ const ScoreAnalizer = require('../utils/ScoreAnalyzer');
 const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 const Finding = require('../valueObjects/Finding');
 
+
+
+/**
+ * This class is a service that can be used for scaning a code (or repository)
+ * 
+ * Here you have what is returned by the Semgrep API when scaning with owas top ten as config : https://saeed0x1.medium.com/optimizing-static-application-security-testing-sast-with-semgrep-gemini-cli-b4152e0307c6
+ * Here you have what is retuen by Eslint API : https://eslint.org/docs/latest/use/formatters/
+ */
 class CodeScanner {
+
+    static PYTHON_CMD = os.platform() === 'win32' ? 'py' : 'python';
 
     static performScan({ repoUrl, scanTools }) {
         return new Promise((resolve, reject) => {
@@ -35,7 +45,7 @@ class CodeScanner {
 
                 if (scanTools.includes(CodeScannerTools.SEMGREP)) {
                     const semgrepOut = execSync(
-                        `python -m semgrep --config=p/owasp-top10 ${tmpDir} --json`,
+                        `semgrep --config="p/owasp-top-ten"  ${tmpDir} --json`,
                         { encoding: 'utf8' }
                     );
 					console.log(semgrepOut);
@@ -61,7 +71,7 @@ class CodeScanner {
                 if (scanTools.includes(CodeScannerTools.ESLINT)) {
                     try {
                         const eslintOut = execSync(
-                            `npx eslint --ext .js ${tmpDir} -f json`,
+                            `eslint --ext .js ${tmpDir} -f json`,
                             { encoding: 'utf8' }
                         );
                         console.log(eslintOut)
@@ -83,9 +93,12 @@ class CodeScanner {
         });
     }
 
-    static performZipScan({ zip_name, userId, scanTools }) {
+    static performZipScan({ 
+        zip_name,
+        userId,
+        scanTools 
+    }) {
         return new Promise((resolve, reject) => {
-
             const zipPath = path.join(
                 BASIC_UPLOADING_FOLDER_PATH,
                 userId,
@@ -105,7 +118,7 @@ class CodeScanner {
 
                     if (scanTools.includes(CodeScannerTools.SEMGREP)) {
                         const semgrepOut = execSync(
-                            `semgrep --config=p/owasp-top10 ${tmpDir} --json`,
+                            `semgrep --config="p/owasp-top-ten" ${tmpDir} --json`,
                             { encoding: 'utf8' }
                         );
                         semgrepParseData = JSON.parse(semgrepOut);
@@ -114,7 +127,7 @@ class CodeScanner {
                     if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
                         try {
                             const auditOut = execSync(
-                                `npm audit --json`,
+                                `npm install --package-lock-only && npm audit --json`,
                                 { cwd: tmpDir, encoding: 'utf8' }
                             );
                             npmAuditParseData = JSON.parse(auditOut || '{}');
@@ -192,27 +205,39 @@ class CodeScanner {
         }
 
         let eslintResults = [];
-        if (eslintParseData) {
+        if (Array.isArray(eslintParseData)) {
+
             eslintParseData.forEach(file => {
+
                 file.messages?.forEach(msg => {
 
                     const fingerprint = CryptoSecurityService.encode(
                         `${msg.ruleId}|${file.filePath}|${msg.column}|${msg.message}`
                     );
 
+                    const title =
+                        msg.ruleId
+                            ? msg.ruleId
+                                .replace(/-/g, " ")
+                                .replace(/\b\w/g, c => c.toUpperCase())
+                            : null;
+
                     eslintResults.push(new MappedIssue({
-                        check_id: msg.ruleId,
-                        title:  ruleId?.replace(/-/g, " ")?.replace(/\b\w/g, (c) => c.toUpperCase()) ?? null,
-                        file_path: file.filePath,
-                        start_index: msg.line,
-                        end_index: msg.endLine,
-                        message: msg.message,
-                        severity: msg.severity,
-                        code: msg.source,
+                        check_id: msg.ruleId ?? null,
+                        title,
+                        file_path: file.filePath ?? null,
+                        start_index: msg.line ?? null,
+                        end_index: msg.endLine ?? null,
+                        message: msg.message ?? null,
+                        severity: msg.severity ?? null,
+                        code: msg.source ?? null,
                         fingerprint
                     }));
+
                 });
+
             });
+
         }
 
         const securityScorePoint =
@@ -230,54 +255,135 @@ class CodeScanner {
         });
     }
 
-    static mapOwasp(semgrepResults) {
+
+
+   static mapOwasp(semgrepResults)
+   {
         const categories = new OwaspCategoryMap();
 
-        if (!semgrepResults?.results) return categories;
+        if (!semgrepResults?.results || !Array.isArray(semgrepResults.results)) {
+            return categories;
+        }
 
         semgrepResults.results.forEach(issue => {
 
-            const owaspTag = issue.extra?.metadata?.owasp;
+            const tags = issue?.extra?.metadata?.owasp ?? [];
 
             const mappedIssue = new MappedIssue({
-                check_id: issue.check_id,
-                file_path: issue.path,
-                start_index: issue.start?.line,
-                end_index: issue.end?.line,
-                message: issue.extra?.message,
-                severity: issue.extra?.severity,
-                code: issue.extra?.lines?.join('\n'),
-                fingerprint: issue.extra?.fingerprint
+                check_id: issue.check_id ?? null,
+                file_path: issue.path ?? null,
+                start_index: issue.start?.line ?? null,
+                end_index: issue.end?.line ?? null,
+                message: issue.extra?.message ?? null,
+                severity: issue.extra?.severity ?? null,
+                code: Array.isArray(issue.extra?.lines)
+                        ? issue.extra.lines.join('\n')
+                        : issue.extra?.lines ?? null,
+                fingerprint: issue.extra?.fingerprint ?? null
             });
 
-            if (!owaspTag) return;
+            let matched = false;
 
-            Object.keys(categories).forEach(key => {
-                if (owaspTag.includes(key.substring(0, 3))) {
+            Object.entries(categories).forEach(([key, value]) => {
+
+                if (key === "others") return;
+                if (!Array.isArray(value)) return;
+
+                const prefix = key.substring(0, 3);
+
+                if (
+                    (Array.isArray(tags) && tags.some(tag => tag.startsWith(prefix))) ||
+                    (typeof tags === "string" && tags.startsWith(prefix))
+                )
+                {
+                    mappedIssue.severity = Finding.mapSeverity(
+                        issue.extra?.severity,
+                        prefix
+                    );
+
                     categories[key].push(mappedIssue);
+                    matched = true;
                 }
-                else{
-                    categories.others.push(mappedIssue)
-                }
+
             });
+
+            if (!matched) {
+                categories.others.push(mappedIssue);
+            }
+
         });
 
         return categories;
     }
 
-    static calculateSecurityScorePoints(mappedOWASP) {
-        if (!mappedOWASP) return 100;
 
+
+    /**
+     * Calculate a security score based on issues from multiple tools.
+     * @param {OwaspCategoryMap} mappedOWASP - the mapped OWASP results
+     * @param {MappedIssue[]} eslintMappedIssues - ESLint mapped issues
+     * @param {MappedIssue[]} npmAuditMappedIssues - NPM Audit mapped issues
+     * @returns {number} - a score between 0 and 100
+     */
+    static calculateSecurityScorePoints(
+        mappedOWASP = null,
+        eslintMappedIssues = null,
+        npmAuditMappedIssues = null
+    ) {
         let score = 100;
 
-        Object.values(mappedOWASP).forEach(category => {
-            category.forEach(issue => {
-                const sev = issue.severity?.toUpperCase() || "LOW";
-                score = ScoreAnalizer.calculateScorePoints(score, sev);
-            });
-        });
+        // Count how many tools are actually providing data
+        let toolNumber = 0;
+        if (mappedOWASP) toolNumber++;
+        if (eslintMappedIssues && eslintMappedIssues.length > 0) toolNumber++;
+        if (npmAuditMappedIssues && npmAuditMappedIssues.length > 0) toolNumber++;
+        if (toolNumber === 0) toolNumber = 1; // éviter division par zéro
 
-        return score < 0 ? 0 : score;
+
+        // SEMGREP / OWASP issues
+        if (mappedOWASP) {
+            Object.values(mappedOWASP).forEach(category => {
+                category.forEach(issue => {
+                    const sev = issue.severity?.toUpperCase() || "LOW";
+                    score = ScoreAnalizer.calculateScorePoints(
+                        score,
+                        sev,
+                        CodeScannerTools.SEMGREP,
+                        toolNumber
+                    );
+                });
+            });
+        }
+
+        // ESLint issues
+        if (eslintMappedIssues && eslintMappedIssues.length > 0) {
+            eslintMappedIssues.forEach(issue => {
+                const sev = issue.severity?.toUpperCase() || "LOW";
+                score = ScoreAnalizer.calculateScorePoints(
+                    score,
+                    sev,
+                    CodeScannerTools.ESLINT,
+                    toolNumber
+                );
+            });
+        }
+
+        // NPM Audit issues
+        if (npmAuditMappedIssues && npmAuditMappedIssues.length > 0) {
+            npmAuditMappedIssues.forEach(issue => {
+                const sev = issue.severity?.toUpperCase() || "LOW";
+                score = ScoreAnalizer.calculateScorePoints(
+                    score,
+                    sev,
+                    CodeScannerTools.NPM_AUDIT,
+                    toolNumber
+                );
+            });
+        }
+
+        // Clamp final score between 0 and 100
+        score = Math.max(0, Math.round(score))
+        return score;
     }
 }
 

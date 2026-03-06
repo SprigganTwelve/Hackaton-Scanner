@@ -160,6 +160,6 @@ INSERT INTO solution (corrective_measure, finding_id) VALUES
 -- BLACKLISTED TOKENS
 -- =====================================================
 
-INSERT INTO blacklisted_token (hash_token, expired_at, account_id) VALUES
+INSERT INTO blacklisted_token (token, expired_at, account_id) VALUES
 ('blacklisted_hash_token_1', DATE_ADD(NOW(), INTERVAL 7 DAY), 'user_1'),
 ('blacklisted_hash_token_2', DATE_ADD(NOW(), INTERVAL 3 DAY), 'user_2');

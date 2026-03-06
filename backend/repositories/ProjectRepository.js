@@ -18,17 +18,25 @@ class ProjectRepository {
      *
      * @param {string} userId - Unique identifier of the user
      * @param {Object} projectData - Project data
-     * @param {string} projectData.name - Project name
-     * @param {string} projectData.url - Repository URL (git or zip)
+     * @param {?string} projectData.original_name    - Project name (server - original filename)
+     * @param {string} projectData.name             - Project name (client filename)
+     * @param {string} projectData.url              - Repository URL (git or zip)
      * @param {boolean} [projectData.is_uploaded=false] - Indicates if the project was uploaded as a zip
      * 
      * @returns {Promise<{ userProject: UserProfile, alreadyExists?: boolean }>}
      */
-    static async addProject(userId, { name, url, is_uploaded = false }) {
+    static async addProject(
+        userId, 
+        {
+            original_name = null,
+            name, url,
+            is_uploaded = false
+        }
+    ) {
 
         // Check if project already exists (same name OR same url)
         const [existingRows] = await pool.query(
-            `SELECT id, name, created_at, url, is_uploaded
+            `SELECT id, name, original_name, created_at, url, is_uploaded
             FROM project
             WHERE account_id = ?
             AND (name = ? OR url = ?)
@@ -47,9 +55,9 @@ class ProjectRepository {
 
             // Insert new project
             const [result] = await pool.query(
-                `INSERT INTO project (name, url, account_id, is_uploaded)
-                VALUES (?, ?, ?, ?)`,
-                [name, url, userId, is_uploaded]
+                `INSERT INTO project (original_name, name, url, account_id, is_uploaded)
+                VALUES (?,?, ?, ?, ?)`,
+                [original_name, name, url, userId, is_uploaded]
             );
 
             // Read inserted row (to stay consistent with DB values like created_at)
@@ -66,6 +74,7 @@ class ProjectRepository {
         const userProject = new UserProfile({
             projectId: projectRow.id,
             name: projectRow.name,
+            originalName: original_name,
             createdAt: projectRow.created_at,
             url: projectRow.url,
             isUploaded: !!projectRow.is_uploaded,
@@ -95,17 +104,31 @@ class ProjectRepository {
 
 
     /**
-     * return a project by its id
-     * @param {string} projectId - the unique identifier of the project 
-     * @returns {Promise<{id: string, name:string}>}
+     * Return a project by its id.
+     *
+     * @param {number|string} projectId - The unique identifier of the project.
+     * @returns {Promise<{id: number, name: string, url: string, isUploaded: boolean, originalName: string}>}
+     * @throws {Error} If the project does not exist.
      */
-    static async getProjectById(projectId)
-    {
+    static async getProjectById(projectId) {
         const [rows] = await pool.query(
-            'SELECT id, name, url, is_uploaded FROM project WHERE id = ?',
+            'SELECT id, original_name, name, url, is_uploaded FROM project WHERE id = ?',
             [projectId]
-        )
-        return rows[0];
+        );
+
+        if (!rows || rows.length === 0) {
+            throw new DomainError(`Project with id ${projectId} not found`);
+        }
+
+        const project = rows[0];
+
+        return {
+            id: project.id,
+            name: project.name,
+            url: project.url,
+            originalName: project.original_name,
+            isUploaded: Boolean(project.is_uploaded)
+        };
     }
 
     /**

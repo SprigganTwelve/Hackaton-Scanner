@@ -3,7 +3,8 @@ class UserProject {
   /**
    * @param {Object} params
    * @param {string|number} params.projectId - Unique project ID
-   * @param {string} params.name - Name of the project
+   * @param {string} params.name - Name of the project (client filename)
+   * @param {string | null} params.originalName - Name of the project (original name produced by the backend)
    * @param {Date|string} params.createdAt - Creation date of the project
    * @param {string} params.url - URL of the project (git or zip)
    * @param {boolean} params.isUploaded - True if project was uploaded as a zip
@@ -18,6 +19,7 @@ class UserProject {
         name,
         createdAt,
         url,
+        originalName = null,
         isUploaded,
         analysisRecords = [] // {id:string}[]
     }) {
@@ -26,6 +28,7 @@ class UserProject {
         this.createdAt = createdAt;
         this.url = url;
         this.isUploaded = isUploaded;
+        this.originalName = originalName;
         /** @type {Array< {id: string|number, status: string, startedAt: Date|string, score?: string} >} */
         this.analysisRecords = analysisRecords
     }

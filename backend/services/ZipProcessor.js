@@ -15,12 +15,15 @@ class ZipProcessor{
     }
 
 
-    /** 
-     *This method us used to sauvegard a zip file in a specific folder for later use,
-     *Here we just save the zip file without decompressiong it, 
-     *this can be useful if we want to keep the original zip file for later use or if we want to process it later without the need to decompress it now.
-     * @parma {Buffer} buffer - the buffer of the zip file
-     * @param {string} destPath - the destination path where the zip file will be saved
+    /**
+     * This method is used to sauvegard a zip file in a specific folder for later use.
+     * Here we just save the zip file without decompressing it.
+     * This can be useful if we want to keep the original zip file for later use
+     * or process it later without decompressing it now.
+     *
+     * @param {Buffer} buffer - The buffer of the zip file
+     * @param {string} destPath - The destination path where the zip file will be saved
+     * @returns {Promise<string>} The full path of the saved file
      */
     static async saveZipFolder(buffer, destPath) {
 
@@ -32,17 +35,22 @@ class ZipProcessor{
             throw new Error('Invalid parameter: destPath is required');
         }
 
-        if (!destPath || !destPath.endsWith('.zip')) {
+        if (!destPath.endsWith('.zip')) {
             throw new Error('Invalid parameter: destPath must end with .zip');
         }
 
-        //Retreive the file name from destPath
+        // Retrieve the file name from destPath
         const safeFileName = path.basename(destPath);
 
-        //Create folder if needed
-        await fs.promises.mkdir(destPath, { recursive: true });
+        // Retrieve the destination directory
+        const destDir = path.dirname(destPath);
 
-        const fullPath = path.join(destPath, safeFileName);
+        // Create folder if needed
+        if (!fs.existsSync(destDir)) {
+            await fs.promises.mkdir(destDir, { recursive: true });
+        }
+
+        const fullPath = path.join(destDir, safeFileName);
 
         await fs.promises.writeFile(fullPath, buffer);
 
@@ -50,6 +58,7 @@ class ZipProcessor{
     }
 
 
+    
     /**
      * decompress a zip file to a specific destination folder
      * @param {Buffer} buffer - the buffer of the zip file

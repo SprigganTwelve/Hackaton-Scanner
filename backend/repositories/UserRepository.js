@@ -96,7 +96,7 @@ class UserRepository {
     static async getUserProjects(userId) {
         // Project fetching projets
         const [projects] = await pool.query(
-            `SELECT id, name, created_at, url, is_uploaded
+            `SELECT id, name, original_name, created_at, url, is_uploaded
                 FROM project
                 WHERE account_id = ?
                 ORDER BY created_at DESC
@@ -133,6 +133,7 @@ class UserRepository {
             return new UserProject({
                     projectId: project.id,
                     name: project.name,
+                    originalName: project?.original_name ?? null,
                     createdAt: project.created_at,
                     url: project.url,
                     isUploaded: !!project.is_uploaded,

@@ -46,10 +46,9 @@ class RecordScanHelper
     static async execute(projectId, scanResult)
     {
         const analysisTools = [];
-
         //calculate score
-        const scoreBadge = ScoreAnalizer.analyze(securityPoints)
-        const securityPoints = CodeScanner.calculateSecurityScorePoints(scanResult.owasp)
+        console.log("SCAN RESULT...", scanResult)
+        const scoreBadge = ScoreAnalizer.analyze(scanResult?.securityScorePoint ?? null )
 
         //Create analysis record
         const analysisRecord = await AnalysisRecordRepository.addAnalysisRecord({ 

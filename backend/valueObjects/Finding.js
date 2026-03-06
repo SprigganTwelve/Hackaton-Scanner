@@ -38,12 +38,13 @@ class Finding {
     /**
      * This function helps to map the severity of a finding 
      * based on its category and the original severity
-     * provided by the code scanner. 
+     * provided by the code scanner.
+     * It supports owaps category or number grade/status
      * @param  { string| number} severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
-     * @param  { string? } owaspVulnerabilityError - indicates the owasp error
+     * @param  { string? } owaspVulnerabilityError - indicates the owasp error , a string compoused of 3 characters representing the owaps vulnerability (ex: AO1, A02 ...)
      * @returns {string } 
      */
-    static mapSeverity(severity, owaspVulnerabilityError ){
+    static mapSeverity(severity, owaspVulnerabilityErrorKey){
         if (!isNaN(severity)) {
             // 2 -> HIGH, 1 -> MEDIUM, 0 -> LOW
             return severity === 2
@@ -71,10 +72,10 @@ class Finding {
                 
             case 'ERROR':
                 if(
-                    owaspVulnerabilityError && 
+                    owaspVulnerabilityErrorKey && 
                     (
-                        owaspVulnerabilityError === OWASPVulnerabilityError.A01_Broken_Access_Control || 
-                        owaspVulnerabilityError === OWASPVulnerabilityError.A07_Auth_Failures
+                        owaspVulnerabilityErrorKey === OWASPVulnerabilityError.A01_Broken_Access_Control.substring(0, 3) || 
+                        owaspVulnerabilityErrorKey === OWASPVulnerabilityError.A07_Auth_Failures.substring(0, 3)
                     )
                 )
                     return CodeSeverity.CRITICAL;

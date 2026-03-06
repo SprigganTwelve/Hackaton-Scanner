@@ -14,7 +14,6 @@ class OwaspCategoryMap
      * @property {MappedIssue[]} [A08_Software_And_Data_Integrity_Failures]
      * @property {MappedIssue[]} [A09_Security_Logging_And_Monitoring_Failures]
      * @property {MappedIssue[]} [A10_Server_Side_Request_Forgery]
-     * 
      * @property {MappedIssue[]} [others]
      */
 
@@ -32,9 +31,8 @@ class OwaspCategoryMap
         A08_Software_And_Data_Integrity_Failures = [],
         A09_Security_Logging_And_Monitoring_Failures = [],
         A10_Server_Side_Request_Forgery = [],
-
-        others= [],
-    })
+        others = [],
+    } = {})   // ⭐ IMPORTANT
     {
         this.A01_Broken_Access_Control = A01_Broken_Access_Control;
         this.A02_Cryptographic_Failures = A02_Cryptographic_Failures;
@@ -46,7 +44,6 @@ class OwaspCategoryMap
         this.A08_Software_And_Data_Integrity_Failures = A08_Software_And_Data_Integrity_Failures;
         this.A09_Security_Logging_And_Monitoring_Failures = A09_Security_Logging_And_Monitoring_Failures;
         this.A10_Server_Side_Request_Forgery = A10_Server_Side_Request_Forgery;
-
         this.others = others;
     }
 }
