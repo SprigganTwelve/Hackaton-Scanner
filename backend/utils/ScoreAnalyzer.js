@@ -35,14 +35,14 @@ class ScoreAnaliser {
                 basePenalty = 30;
                 break;
 
-            case CodeSeverity.WARNING:
-            case "MEDIUM":
+            case CodeSeverity.MEDIUM:
+            case "WARNING":
             case "MODERATE":
                 basePenalty = 15;
                 break;
 
-            case CodeSeverity.INFO:
-            case "LOW":
+            case CodeSeverity.LOW:
+            case "INFO":
                 basePenalty = 5;
                 break;
 
@@ -89,9 +89,6 @@ class ScoreAnaliser {
      */
     static analyze(points)
     {
-        if( points !== 0 && !points)
-            return 'UNDETERMINED'
-        
         switch (true)
         {
             case points > 90:

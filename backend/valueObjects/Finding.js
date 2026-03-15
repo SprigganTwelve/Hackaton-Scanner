@@ -3,13 +3,14 @@ const CodeSeverity = require('../enums/CodeSeverity')
 
 class Finding {
     /**
-     * Represents a security finding detected in a scanned file.
-     * @param {Object} params - The parameters for creating a Finding instance.
-     * @param {string} params.file_path - The relative path of the file that was scanned.
-     * @param {string} params.severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
-     * @param {string} params.code - The code snippet where the finding was detected.
-     * @param {string} params.owaspVulnerabilityError - The OWASP vulnerability category associated with this finding (e.g., "A01_Broken_Access_Control").
-     * */
+     * Represents a security finding detected during the scan of a file.
+     *
+     * @param {Object} params - Parameters used to create a Finding instance.
+     * @param {string} params.file_path - Relative path of the scanned file.
+     * @param {string} params.severity - Original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
+     * @param {string} params.code - Code snippet where the finding was detected.
+     * @param {string[]} params.owaspVulnerabilityCategories - OWASP vulnerability categories associated with the finding (e.g., "A01_Broken_Access_Control").
+     */
     constructor({ 
         file_path,
         severity,
@@ -18,21 +19,20 @@ class Finding {
         rule_id,
         fingerprint,
         analysis_record_id,
-        owaspVulnerabilityError,
+        owaspVulnerabilityCategories= [],
     })
     {
-        this.pattern_type = pattern_type;
         this.file_path = file_path;
         this.severity = Finding.mapSeverity(
             severity,
-            owaspVulnerabilityError
+            owaspVulnerabilityCategories
         );
         this.code = code;
         this.tool_id = tool_id;
         this.rule_id = rule_id;
         this.analysis_record_id = analysis_record_id
         this.fingerprint = fingerprint
-        this.owaspVulnerabilityError = owaspVulnerabilityError
+        this.owaspVulnerabilityCategories = owaspVulnerabilityCategories
     }
 
     /**
@@ -41,10 +41,11 @@ class Finding {
      * provided by the code scanner.
      * It supports owaps category or number grade/status
      * @param  { string| number} severity - The original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
-     * @param  { string? } owaspVulnerabilityError - indicates the owasp error , a string compoused of 3 characters representing the owaps vulnerability (ex: AO1, A02 ...)
+     * @param  { ?string[] } owaspVulnerabilityCategories - indicates the owasp error , a string compoused of 3 characters representing the owaps vulnerability 
+     *                                                     It can also be an array of prefix (ex: AO1..., A02 ...)
      * @returns {string } 
      */
-    static mapSeverity(severity, owaspVulnerabilityErrorKey){
+    static mapSeverity(severity, owaspVulnerabilityCategories= []){
         if (!isNaN(severity)) {
             // 2 -> HIGH, 1 -> MEDIUM, 0 -> LOW
             return severity === 2
@@ -71,13 +72,10 @@ class Finding {
                 return CodeSeverity.CRITICAL;
                 
             case 'ERROR':
-                if(
-                    owaspVulnerabilityErrorKey && 
-                    (
-                        owaspVulnerabilityErrorKey === OWASPVulnerabilityError.A01_Broken_Access_Control.substring(0, 3) || 
-                        owaspVulnerabilityErrorKey === OWASPVulnerabilityError.A07_Auth_Failures.substring(0, 3)
-                    )
-                )
+                const isCritical = owaspVulnerabilityCategories?.some(cat => 
+                    ['A01','A07'].some(prefix => cat.startsWith(prefix))
+                );
+                if(isCritical)
                     return CodeSeverity.CRITICAL;
                 return CodeSeverity.HIGH;
             default: 

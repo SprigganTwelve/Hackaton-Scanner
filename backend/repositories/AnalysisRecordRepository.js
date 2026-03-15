@@ -40,19 +40,29 @@ class AnalysisRecordRepository
      */
     /**
      * 
-     * @param {AnalisisToolData} param0 
+     * @param {AnalisisToolData} param0
+     * @returns {boolean} - tell if everything when successfully or not
      */
     static async addAnalysisTools({analysis_record_id, analysisTools})
     {
-        for(toolName of analysisTools)
-        {
-            const toolId = AnalysisToolRepository.getToolByName(toolName)
-            await pool.query(
-                `
-                    INSERT INTO analysis_tools(analysis_record_id, tool_id) VALUES(?, ?)
-                `,
-                [analysis_record_id, toolId]
-            )
+        try {
+            for(const toolName of analysisTools)
+            {
+                const tool = await AnalysisToolRepository.getToolByName(toolName)
+                const toolId = tool.id
+
+                await pool.query(
+                    `
+                        INSERT INTO analysis_tools(analysis_record_id, tool_id) VALUES(?, ?)
+                    `,
+                    [analysis_record_id, toolId]
+                )
+            }
+            return true;
+        } 
+        catch (error) {
+            console.log("[AnalysisRecordRepository::addAnalysisTools] Somerthing went wrong, error : ", (error)?.message)
+            return false  
         }
     }
 
@@ -63,42 +73,45 @@ class AnalysisRecordRepository
      * @returns {Promise<{score: string, quantityError: number, quantityVulnerableDependences: number, quantityRecommandedSolution: number}>}
      */
     static async getKPI(analysisId) {
-        // Get score of the analysis
-        const [scoreRows] = await pool.query(
-            'SELECT score FROM analysis_record WHERE id = ?',
-            [analysisId]
-        );
-        const score = scoreRows[0]?.score ?? null;
+        const [rows] = await pool.query(`
+            SELECT 
+                ar.score,
+                -- Compte total des findings
+                (SELECT COUNT(*) FROM finding WHERE analysis_record_id = ar.id) AS quantityError,
+                
+                -- Compte uniquement les vulnérabilités npmAudit
+                (SELECT COUNT(*) 
+                 FROM finding f 
+                 JOIN tools t ON f.tool_id = t.id 
+                 WHERE f.analysis_record_id = ar.id AND t.name = 'npmAudit') AS quantityVulnerableDependences,
+                
+                -- Compte le nombre de solutions uniques liées aux findings de cette analyse
+                (SELECT COUNT(DISTINCT s.id) 
+                 FROM solution s 
+                 JOIN finding f ON s.finding_id = f.id 
+                 WHERE f.analysis_record_id = ar.id) AS quantityRecommandedSolution
 
-        // Count total findings (errors) for this analysis
-        const [errorRows] = await pool.query(
-            'SELECT COUNT(*) AS total FROM finding WHERE analysis_record_id = ?',
-            [analysisId]
-        );
-        const quantityError = errorRows[0]?.total ?? 0;
+            FROM analysis_record ar
+            WHERE ar.id = ?
+        `, [analysisId]);
 
-        // Count vulnerable dependencies (npm audit findings)
-        const [vulnDepRows] = await pool.query(
-            'SELECT COUNT(*) AS total FROM finding WHERE analysis_record_id = ? AND tool_id = ?',
-            [analysisId, CodeScannerTools.NPM_AUDIT]
-        );
-        const quantityVulnerableDependences = vulnDepRows[0]?.total ?? 0;
+        // Si l'analyse n'existe pas encore ou n'a pas de données
+        if (!rows.length) {
+            return {
+                score: 'UNDETERMINED',
+                quantityError: 0,
+                quantityVulnerableDependences: 0,
+                quantityRecommandedSolution: 0
+            };
+        }
 
-        // Count recommended solutions applied to findings of this analysis
-        const [solutionRows] = await pool.query(
-            `SELECT COUNT(*) AS total 
-             FROM solution s
-             JOIN finding f ON s.finding_id = f.id
-             WHERE f.analysis_record_id = ?`,
-            [analysisId]
-        );
-        const quantityRecommandedSolution = solutionRows[0]?.total ?? 0;
+        const result = rows[0];
 
         return {
-            score,
-            quantityError,
-            quantityVulnerableDependences,
-            quantityRecommandedSolution
+            score: result.score ?? 'UNDETERMINED',
+            quantityError: parseInt(result.quantityError) || 0,
+            quantityVulnerableDependences: parseInt(result.quantityVulnerableDependences) || 0,
+            quantityRecommandedSolution: parseInt(result.quantityRecommandedSolution) || 0
         };
     }
 }

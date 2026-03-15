@@ -1,5 +1,6 @@
 const MappedIssue = require("./MappedIssue")
 
+
 class OwaspCategoryMap
 {
     /**
@@ -18,6 +19,7 @@ class OwaspCategoryMap
      */
 
     /**
+     * Adaptated for 2025
      * @param {OwaspIssuesMap} param0
      */
     constructor({

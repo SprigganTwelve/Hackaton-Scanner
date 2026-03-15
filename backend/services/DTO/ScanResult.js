@@ -1,5 +1,6 @@
 const OwaspCategoryMap = require('./OwaspCategoryMap')
 const MappedIssue = require('./MappedIssue')
+
 class ScanResult{
     /**
      * @typedef {Object} scanData
@@ -20,10 +21,10 @@ class ScanResult{
         eslintResults,
         npmAuditResults,
         securityScorePoint =null ,
-        owasp = [],  // categories sort by owaps top ten
+        owasp = {},  // categories sort by owaps top ten
         eslint,
         npmAudit,
-        message = null
+        message = null //description
     })
     {
         this.securityScorePoint = securityScorePoint;

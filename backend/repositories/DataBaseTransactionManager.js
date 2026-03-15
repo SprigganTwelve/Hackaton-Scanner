@@ -1,15 +1,20 @@
 const pool = require('../config/database/mysql.client');
 
-class DataBaseTransactionManager {
+
+class DataBaseTransactionManager
+{
 
     /**
      * Execute database operations inside a transaction
      * 
-     * @param {function({connexion, commit, rollback}): Promise<any>} transactionFunction
+     * @param {function({
+     *      connexion: import('mysql2').PoolConnection,
+     *      commit: Promise<()=>void>, 
+     *      rollback: Promise<()=>void>
+     * }): Promise<any>} transactionFunction
      * Callback containing the DB operations to execute atomically.
      */
     static async executeTransaction(transactionFunction) {
-
         const connexion = await pool.getConnection();
         try {
             await connexion.beginTransaction();

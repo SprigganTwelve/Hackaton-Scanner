@@ -10,14 +10,18 @@ class BlacklistedTokenRepository {
      * @param {Object} param0 
      * @param {string} param0.token - The still-valid JWT to store
      * @param {Date}   param0.expired_at - The time when the token considered expired
-     * @returns {Promise<void>}
+     * @returns {Promise<boolean>}   - Indicate if everything went smoothly
      */
     static async save({ token, expired_at }) {
-        await pool.query(
+        const [result] = await pool.query(
             `INSERT INTO blacklisted_token (token, expired_at)
              VALUES (?, ?)`,
             [token, expired_at]
         );
+
+        if(result.length == 0)
+            return false
+        return true;
     }
 
     /**

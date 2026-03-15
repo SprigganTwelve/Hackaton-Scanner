@@ -43,16 +43,16 @@ function KpiCard({ title, value, sub, badge }) {
 }
 
 function SeverityPill({ sev }) {
-  const s = (sev || "").toLowerCase();
+  const cleanSeverity = (sev || "").toLowerCase();
   const cls =
-    s === "critical" ? "sev--critical" :
-    s === "high" ? "sev--high" :
-    s === "medium" ? "sev--medium" :
+    cleanSeverity === "critical" ? "sev--critical" :
+    cleanSeverity === "high" ? "sev--high" :
+    cleanSeverity === "medium" ? "sev--medium" :
     "sev--low";
   const label =
-    s === "critical" ? "CRITIQUE" :
-    s === "high" ? "HAUTE" :
-    s === "medium" ? "MOYENNE" :
+    cleanSeverity === "critical" ? "CRITIQUE" :
+    cleanSeverity === "high" ? "HAUTE" :
+    cleanSeverity === "medium" ? "MOYENNE" :
     "BASSE";
   return <span className={`sev ${cls}`}>{label}</span>;
 }
@@ -354,23 +354,32 @@ export default function ScanDashboard() {
 
   // --- Fetch KPIs et findings ---
   useEffect(() => {
-    if (!currentProject?.projectId) return;
+    if (!currentProject?.projectId) 
+      return;
 
     setLoading(true);
     setErr(null);
 
     const latestAnalysis = getLatestAnalysisRecords([currentProject])[0]?.latestAnalysis;
 
-    Promise.all([
-      getLastScanSummary(currentProject.projectId),
-      listFindings(latestAnalysis?.id)
-    ])
-      .then(([kpiData, findingsData]) => {
-        setKpi(kpiData);
-        setFindings(Array.isArray(findingsData) ? findingsData : []);
-      })
-      .catch(e => setErr(e))
-      .finally(() => setLoading(false));
+    console.log('-------Fetch Query Dashboard Data----')
+
+    const fetchData = async ()=>{
+      await Promise.all([
+        getLastScanSummary(currentProject.projectId),
+        listFindings(latestAnalysis?.id)
+      ])
+        .then(([kpiData, findingsData]) => {
+          setKpi(kpiData);
+          console.log({kpiData, findingsData})
+          setFindings(Array.isArray(findingsData) ? findingsData : []);
+          console.log('-----END FETCHING------')
+        })
+        .catch(e => setErr(e))
+        .finally(() => setLoading(false));
+    }
+
+    fetchData()
   }, [currentProject]);
 
   // --- Scan ---

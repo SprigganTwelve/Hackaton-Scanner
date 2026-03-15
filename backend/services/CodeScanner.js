@@ -19,6 +19,7 @@ const CodeScannerTools = require('../enums/CodeScannerTool');
 const ScoreAnalizer = require('../utils/ScoreAnalyzer');
 const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 const Finding = require('../valueObjects/Finding');
+const SemgrepFormatter = require('../utils/Formatter');
 
 
 
@@ -27,6 +28,7 @@ const Finding = require('../valueObjects/Finding');
  * 
  * Here you have what is returned by the Semgrep API when scaning with owas top ten as config : https://saeed0x1.medium.com/optimizing-static-application-security-testing-sast-with-semgrep-gemini-cli-b4152e0307c6
  * Here you have what is retuen by Eslint API : https://eslint.org/docs/latest/use/formatters/
+ * @returns {[]}
  */
 class CodeScanner {
 
@@ -34,140 +36,207 @@ class CodeScanner {
 
     static performScan({ repoUrl, scanTools }) {
         return new Promise((resolve, reject) => {
+            const tmpDir = path.join(os.tmpdir(), Date.now().toString());
             try {
                 let semgrepParseData = null;
                 let npmAuditParseData = null;
                 let eslintParseData = null;
 
-                const tmpDir = path.join(os.tmpdir(), Date.now().toString());
+                if(!fs.existsSync(tmpDir))
+                {
+                    fs.mkdirSync(tmpDir, {recursive: true})
+                }
+
 
                 execSync(`git clone ${repoUrl} ${tmpDir}`, { encoding: 'utf8' });
 
                 if (scanTools.includes(CodeScannerTools.SEMGREP)) {
-                    const semgrepOut = execSync(
-                        `semgrep --config="p/owasp-top-ten"  ${tmpDir} --json`,
-                        { encoding: 'utf8' }
-                    );
-					console.log(semgrepOut);
-                    semgrepParseData = JSON.parse(semgrepOut);
+                    try{
+                        const semgrepOut = execSync(
+                            `semgrep --config="p/owasp-top-ten" ${tmpDir} --json`,
+                            { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }
+                        );
+                        console.log(semgrepOut);
+                        semgrepParseData = JSON.parse(semgrepOut);
+                    }
+                    catch(error){
+                        console.log("Something went wrong while executing semgerp, error ", (error)?.message)
+                    }
                 }
 
                 if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
                     try {
-                        const auditOut = execSync(
-                            `cd ${tmpDir} && npm audit --json`,
-                            { encoding: 'utf8' }
-                        );
-                        console.log(auditOut)
+  
+                        execSync(`npm install --package-lock-only`, { cwd: tmpDir });
+                        const auditOut = execSync(`npm audit --json`, { cwd: tmpDir, encoding: 'utf8' });
                         npmAuditParseData = JSON.parse(auditOut || '{}');
                     }
-                    catch (err) {
-                        npmAuditParseData = err.stdout
-                            ? JSON.parse(err.stdout)
+                    catch (error) {
+                        console.log("Something went wrong while installing package lock json, error ", (error)?.message)
+                        npmAuditParseData = error.stdout
+                            ? JSON.parse('{}')
                             : {};
                     }
                 }
 
                 if (scanTools.includes(CodeScannerTools.ESLINT)) {
                     try {
-                        const eslintOut = execSync(
-                            `eslint --ext .js ${tmpDir} -f json`,
-                            { encoding: 'utf8' }
-                        );
-                        console.log(eslintOut)
+                        const eslintOut = execSync(`eslint --ext .js . -f json`, { cwd: tmpDir, encoding: 'utf8' });
                         eslintParseData = JSON.parse(eslintOut || '[]');
-                    } catch {
+                    } 
+                    catch(error) {
+                        console.log("Something went wrong while executing eslint, error ", (error)?.message)
                         eslintParseData = [];
                     }
                 }
 
-                resolve(this.generateScannerResult({
+                const result = CodeScanner.generateScannerResult({
                     eslintParseData,
                     npmAuditParseData,
                     semgrepParseData
-                }));
-
-            } catch (err) {
+                })
+                
+                console.log("Deleting git clone: ", tmpDir)
+                console.log("Processing ....")
+                fs.rmSync(tmpDir, { recursive: true, force: true })
+                console.log("Deleting git done!!")
+                
+                // console.log("RESULT: ", result)
+                resolve(result);
+            }
+            catch (err) {
+                if(fs.existsSync(tmpDir)){
+                    console.log("[ERROR HANDLER] Deleting git clone: ", tmpDir)
+                    console.log("[ERROR HANDLER] Processing ....")
+                    fs.rmSync(tmpDir, { recursive: true, force: true })
+                    console.log("[ERROR HANDLER] Deleting git done!!")
+                }
                 reject(err);
             }
         });
     }
 
-    static performZipScan({ 
-        zip_name,
-        userId,
-        scanTools 
-    }) {
-        return new Promise((resolve, reject) => {
-            const zipPath = path.join(
-                BASIC_UPLOADING_FOLDER_PATH,
-                userId,
-                'projects',
-                zip_name
-            );
 
-            const tmpDir = path.join(os.tmpdir(), Date.now().toString());
+    static performZipScan({ zip_name, userId, scanTools }) {
+        return new Promise(async (resolve, reject) => {
+            const zipPath = path.join(BASIC_UPLOADING_FOLDER_PATH, userId, 'projects', zip_name);
+            const tmpDir = path.join(os.tmpdir(), `scan_${Date.now()}`);
 
-            let semgrepParseData = null;
-            let npmAuditParseData = null;
-            let eslintParseData = null;
+            try {
+                if(!fs.existsSync(zipPath)){
+                    console.log("The zip file scanned right now, doesn't exist in the storage, path: ", zipPath)
+                    return;
+                }
+                // Create Temp folder
+                if (!fs.existsSync(tmpDir)) {
+                    fs.mkdirSync(tmpDir, { recursive: true });
+                }
 
-            fs.createReadStream(zipPath)
-                .pipe(unzipper.Extract({ path: tmpDir }))
-                .on('close', () => {
+                console.log("Unzipping file...");
+                
+                // Await  fiel unzipping
+                await fs.createReadStream(zipPath)
+                    .pipe(unzipper.Extract({ path: tmpDir }))
+                    .promise();
 
-                    if (scanTools.includes(CodeScannerTools.SEMGREP)) {
+                console.log("Unzip completed. Zip Scanning Started...");
+
+                let semgrepParseData = null;
+                let npmAuditParseData = null;
+                let eslintParseData = null;
+
+                // --- SEMGREP ---
+                if (scanTools.includes(CodeScannerTools.SEMGREP)) {
+                    try {
                         const semgrepOut = execSync(
-                            `semgrep --config="p/owasp-top-ten" ${tmpDir} --json`,
-                            { encoding: 'utf8' }
+                            `semgrep --config="p/owasp-top-ten" "${tmpDir}" --json`,
+                            { 
+                                encoding: 'utf8',
+                                maxBuffer: 10 * 1024 * 1024,
+                                stdio: ['pipe', 'pipe', 'ignore']
+                            }
                         );
                         semgrepParseData = JSON.parse(semgrepOut);
                     }
+                    catch (err) {
+                        console.warn("Semgrep error:", err.message);
+                    }
+                }
 
-                    if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
-                        try {
-                            const auditOut = execSync(
-                                `npm install --package-lock-only && npm audit --json`,
-                                { cwd: tmpDir, encoding: 'utf8' }
-                            );
+                // --- NPM AUDIT ---
+                if (scanTools.includes(CodeScannerTools.NPM_AUDIT)) {
+                    try {
+                        //Check for packages.json
+                        if (fs.existsSync(path.join(tmpDir, 'package.json'))) {
+                            execSync(`npm install --package-lock-only`, { cwd: tmpDir });
+                            const auditOut = execSync(`npm audit --json`, { cwd: tmpDir, encoding: 'utf8' });
                             npmAuditParseData = JSON.parse(auditOut || '{}');
-                        } catch (err) {
-                            npmAuditParseData = err.stdout
-                                ? JSON.parse(err.stdout)
-                                : {};
                         }
                     }
-
-                    if (scanTools.includes(CodeScannerTools.ESLINT)) {
-                        try {
-                            const eslintOut = execSync(
-                                `eslint --ext .js ${tmpDir} -f json`,
-                                { encoding: 'utf8' }
-                            );
-                            eslintParseData = JSON.parse(eslintOut || '[]');
-                        } catch {
-                            eslintParseData = [];
-                        }
+                    catch (err) {
+                        npmAuditParseData = err.stdout ? JSON.parse(err.stdout) : {};
+                        console.log("Something went wrong while executing npm, error ", (err)?.message)
                     }
+                }
 
-                    resolve(this.generateScannerResult({
-                        eslintParseData,
-                        npmAuditParseData,
-                        semgrepParseData
-                    }));
-                })
-                .on('error', reject);
+                // --- ESLINT ---
+                if (scanTools.includes(CodeScannerTools.ESLINT)) {
+                    try {
+                        const eslintOut = execSync(`eslint --ext .js . -f json`, { cwd: tmpDir, encoding: 'utf8' });
+                        eslintParseData = JSON.parse(eslintOut || '[]');
+                    }
+                    catch (error) {
+                        eslintParseData = error.stdout ? JSON.parse(error.stdout) : [];
+                        console.log("Something went wrong while executing eslint, error ", (error)?.message)
+                    }
+                }
+
+                const finalResult = CodeScanner.generateScannerResult({
+                    eslintParseData,
+                    npmAuditParseData,
+                    semgrepParseData
+                });
+
+                console.log("Unzip File Scanned!!");
+                // Nettoyage
+                console.log("Cleaning up:", tmpDir);
+                fs.rmSync(tmpDir, { recursive: true, force: true });
+
+                resolve(finalResult);
+
+            }
+            catch (err) {
+                console.error("Critical Scan Error:", err);
+                if (fs.existsSync(tmpDir)) {
+                    fs.rmSync(tmpDir, { recursive: true, force: true });
+                }
+                reject(err);
+            }
         });
     }
 
-    static generateScannerResult({ eslintParseData, npmAuditParseData, semgrepParseData }) {
 
+    /**
+     * This function  helps mapping the code analyse result into
+     * formatted data model produce by the system (for uniformity)
+     * @param {Object} param0 
+    static generateScannerResult({ eslintParseData, npmAuditParseData, semgrepParseData })
+     * @param {Object} param0.eslintParseData
+     * @param {Object} param0.npmAuditParseData
+     * @param {Object} param0.semgrepParseData
+     * @returns {ScanResult} 
+     * @returns 
+     */
+    static generateScannerResult({ eslintParseData, npmAuditParseData, semgrepParseData })
+    {
         let mappedOWASP = semgrepParseData
             ? CodeScanner.mapOwasp(semgrepParseData)
             : null;
 
+        /** @type {MappedIssue[]} */
         let auditResults = [];
-        if (npmAuditParseData?.advisories) {
+        if (npmAuditParseData?.advisories)
+        {
             const { advisories = {}, actions = [] } = npmAuditParseData;
 
             Object.values(advisories).forEach(advisory => {
@@ -185,7 +254,7 @@ class CodeScanner {
                         const issue = new MappedIssue({
                             check_id: `${advisory.id}`,
                             file_path,
-                            title: advisory.title,
+                            errorName: advisory.title,
                             start_index: null,
                             end_index: null,
                             message: advisory.title,
@@ -204,6 +273,7 @@ class CodeScanner {
             });
         }
 
+        /** @type {MappedIssue[]} */
         let eslintResults = [];
         if (Array.isArray(eslintParseData)) {
 
@@ -215,7 +285,7 @@ class CodeScanner {
                         `${msg.ruleId}|${file.filePath}|${msg.column}|${msg.message}`
                     );
 
-                    const title =
+                    const errorName =
                         msg.ruleId
                             ? msg.ruleId
                                 .replace(/-/g, " ")
@@ -224,7 +294,7 @@ class CodeScanner {
 
                     eslintResults.push(new MappedIssue({
                         check_id: msg.ruleId ?? null,
-                        title,
+                        errorName,
                         file_path: file.filePath ?? null,
                         start_index: msg.line ?? null,
                         end_index: msg.endLine ?? null,
@@ -240,10 +310,16 @@ class CodeScanner {
 
         }
 
-        const securityScorePoint =
-            CodeScanner.calculateSecurityScorePoints(mappedOWASP);
+        // console.log("[Generate scan result] Generated scan result - (For Debug): ", {
+        //     mappedOWASP: JSON.stringify(mappedOWASP),
+        //     eslintResults: JSON.stringify(eslintResults),
+        //     auditResults :JSON.stringify(auditResults)
+        // })
 
-        return new ScanResult({
+        const securityScorePoint =
+            CodeScanner.calculateSecurityScorePoints(mappedOWASP, eslintResults, auditResults);
+
+        const result = new ScanResult({
             securityScorePoint,
             semgrepResults: semgrepParseData,
             eslintResults,
@@ -253,25 +329,46 @@ class CodeScanner {
             npmAudit: auditResults,
             message: 'Scan completed successfully'
         });
+
+        
+        return result
     }
 
 
 
+
+  /**
+  * Filters Semgrep analysis results based on their classification
+  * within the OWASP Top 10 categories.
+  *
+  * Returns null if the input is invalid or an error occurs.
+  * Otherwise, it returns an OwaspCategoryMap containing the
+  * categorized results.
+  *
+  * @param {*} semgrepResults - The results returned by the Semgrep analysis.
+  * @returns {OwaspCategoryMap | null} The categorized results or null on failure.
+  */
    static mapOwasp(semgrepResults)
    {
-        const categories = new OwaspCategoryMap();
-
-        if (!semgrepResults?.results || !Array.isArray(semgrepResults.results)) {
-            return categories;
+       
+       if (!semgrepResults?.results || 
+            !Array.isArray(semgrepResults.results) || 
+            semgrepResults.results.length === 0
+        ) {
+           return null;
         }
-
+        
+        const categories = new OwaspCategoryMap();
         semgrepResults.results.forEach(issue => {
 
             const tags = issue?.extra?.metadata?.owasp ?? [];
+            if(!Array.isArray(tags) || tags.length == 0) return null
 
+            const check_id = issue.check_id ?? null
             const mappedIssue = new MappedIssue({
-                check_id: issue.check_id ?? null,
+                check_id,
                 file_path: issue.path ?? null,
+                errorName: SemgrepFormatter.toPrettyName(check_id),
                 start_index: issue.start?.line ?? null,
                 end_index: issue.end?.line ?? null,
                 message: issue.extra?.message ?? null,
@@ -287,7 +384,7 @@ class CodeScanner {
             Object.entries(categories).forEach(([key, value]) => {
 
                 if (key === "others") return;
-                if (!Array.isArray(value)) return;
+                if (!Array.isArray(value)) return; //ex: A_02, A4
 
                 const prefix = key.substring(0, 3);
 
@@ -298,7 +395,7 @@ class CodeScanner {
                 {
                     mappedIssue.severity = Finding.mapSeverity(
                         issue.extra?.severity,
-                        prefix
+                        [prefix]
                     );
 
                     categories[key].push(mappedIssue);
@@ -318,11 +415,12 @@ class CodeScanner {
 
 
 
+
     /**
      * Calculate a security score based on issues from multiple tools.
-     * @param {OwaspCategoryMap} mappedOWASP - the mapped OWASP results
-     * @param {MappedIssue[]} eslintMappedIssues - ESLint mapped issues
-     * @param {MappedIssue[]} npmAuditMappedIssues - NPM Audit mapped issues
+     * @param {OwaspCategoryMap | null} mappedOWASP - the mapped OWASP results
+     * @param { MappedIssue[] } eslintMappedIssues - ESLint mapped issues
+     * @param { MappedIssue[] } npmAuditMappedIssues - NPM Audit mapped issues
      * @returns {number} - a score between 0 and 100
      */
     static calculateSecurityScorePoints(
@@ -332,13 +430,21 @@ class CodeScanner {
     ) {
         let score = 100;
 
-        // Count how many tools are actually providing data
         let toolNumber = 0;
-        if (mappedOWASP) toolNumber++;
-        if (eslintMappedIssues && eslintMappedIssues.length > 0) toolNumber++;
-        if (npmAuditMappedIssues && npmAuditMappedIssues.length > 0) toolNumber++;
-        if (toolNumber === 0) toolNumber = 1; // éviter division par zéro
-
+        
+        // Count how many tools are actually providing data
+        if (mappedOWASP) 
+            toolNumber++;
+        
+        if (eslintMappedIssues && eslintMappedIssues.length > 0) 
+            toolNumber++;
+        
+        if (npmAuditMappedIssues && npmAuditMappedIssues.length > 0)
+            toolNumber++;
+        
+        if (toolNumber === 0)
+            toolNumber = 1; // éviter division par zéro
+        
 
         // SEMGREP / OWASP issues
         if (mappedOWASP) {

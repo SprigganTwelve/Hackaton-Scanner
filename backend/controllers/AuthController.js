@@ -20,8 +20,6 @@ const AuthJwtPayload = require('../utils/AuthJwtPayload.js')
 exports.login = async (req, res) => {
     try{
         const { email, password } = req.body;
-        // console.log("-----------------LOGIN!! DATA ----------------")
-        // console.log("LGOIN!! DATA: ", {email, password})
 
         //Data validation
         if(!email || !password)
@@ -30,8 +28,7 @@ exports.login = async (req, res) => {
                 message: "S'il vous plaît, verifiez les chanps & données de la requête"
             })
         
-        const  credentials = await AuthRepository.getCredentials({ email: email.trim() })
-        // console.log("LOGIN CREDENTIALS: ", credentials)
+        const  credentials = await AuthRepository.getCredentials({ email: email?.trim() })
 
         //Password Validation
         const { 
@@ -51,7 +48,6 @@ exports.login = async (req, res) => {
 
         //JWT-Security validation
         const playload = new AuthJwtPayload({ userId })
-        // console.log("LOGIN Playload: ", playload)
         
         const token = jwt.sign(
             { ...playload }, 
@@ -61,7 +57,6 @@ exports.login = async (req, res) => {
             }
         );
 
-        console.log("-----------------LOGIN!! DATA ----------------")
         return res.json({
             token,
             success: true,
@@ -103,7 +98,7 @@ exports.register = async (req, res)=>{
                 success: false,
                 message: "Les champs email et password sont requis"}).status(400)
 
-        if(git_url.trim() && !git_url.startsWith('https://github.com/'))
+        if(git_url?.trim() && !git_url?.startsWith('https://github.com/'))
         {
             return res.json({
                 success: false,

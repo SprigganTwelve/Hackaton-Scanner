@@ -23,11 +23,14 @@ app.use(cors({
 /**
  * Routers
  */
-
-
 app.use('/api/auth', authRouter)
 app.use('/api/users', UserRouter)
 app.use('/api/users', UserQueryRouter);
+
+app.get('/api/test', (_req, res)=>{
+    console.log("BACKEND API TEST")
+    return res.send({ message: "Everything went smoothly" })
+})
 
 app.listen(PORT, ()=>{
     console.log('Server is running on http://localhost:'+ PORT)

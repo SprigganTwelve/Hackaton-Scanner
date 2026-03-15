@@ -21,6 +21,7 @@ const GitRepoHelper = require('../utils/GitRepoHelper')
 const RecordScanHelper = require('../utils/RecordScanHelper')
 
 const AuthPlayload = require('../utils/AuthJwtPayload');
+const { ensureBodyProperty } = require('../utils/RequestValidators');
 
 /**
  * Help an user add a project to his account with git_url
@@ -171,8 +172,8 @@ exports.addProjectWithZip = async (req, res) => {
 
 /**
  * Allow an user to scan a project with the selected scanning tools
- * @param {*} req 
- * @param {*} res 
+ * @param {import('express').Request} req 
+ * @param {import('express').Response} res 
  * @returns 
  */
 exports.scanRepo = async (req, res) => {
@@ -183,7 +184,8 @@ exports.scanRepo = async (req, res) => {
         return res.status(400).json({ success: false, message: 'repoUrl manquant' });
     }
 
-    if(!Array.isArray(scanTools) || scanTools.length === 0){
+    if(!Array.isArray(scanTools) || scanTools.length === 0)
+    {
         return res.status(400).json({ 
             success: false,
             message: 'scanTools ne doit pas être vide'
@@ -221,12 +223,11 @@ exports.scanRepo = async (req, res) => {
             repoUrl,
             scanTools
         });
-        
         let results;
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async({ commit, rollback })=>{
             try{
-                results = await RecordScanHelper.execute(scanResult)
+                results = await RecordScanHelper.execute(projectId,scanResult)
                 await commit()
             }
             catch(error)
@@ -257,8 +258,6 @@ exports.scanZip = async (req, res) => {
     //Data validation
     const { projectId, scanTools } = req.body;
 
-    console.log({projectId, scanTools})
-
     if(!Array.isArray(scanTools) || scanTools.length === 0){
         return res.status(400).json({ 
             success: false,
@@ -286,11 +285,14 @@ exports.scanZip = async (req, res) => {
         const project = await ProjectRepository.getProjectById(projectId)
         
         //Check if the project is uploaded with a zip or added with a git url
-        if(!project?.isUploaded)
+        if(!project?.isUploaded){
             return res.status(400).json({
                 success: false,
                 message: 'Ce projet n\'a pas été ajouté avec un fichier ZIP'
             })
+        }
+
+        console.log({ projectId, project, scanTools })
 
         //Processed with the code scanner service
         /** @type {ScanResult} */
@@ -299,12 +301,13 @@ exports.scanZip = async (req, res) => {
             userId: user.sub,
             scanTools
         });
-        
+
+
         let results = {};
         //Save database analisys resutlt
         DataBaseTransactionManager.executeTransaction(async({commit , rollback })=>{
             try{
-                results  = await RecordScanHelper.execute(scanResult)
+                results  = await RecordScanHelper.execute(project.id, scanResult)
                 commit()
             }
             catch(error)
