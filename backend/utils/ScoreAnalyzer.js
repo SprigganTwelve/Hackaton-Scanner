@@ -13,7 +13,7 @@ class ScoreAnaliser {
     /**
      * 
      * @param {number} score - score initial (0 - 100)
-     * @param {string} sev - severity normalisée
+     * @param {string | number} sev - severity normalisée
      * @param {string} codeScannerTool - tool ayant généré l'issue
      * @param {number} scanToolNumber - nombre total d'outils utilisés
      * @return {number} score final entre 0 - 100
@@ -27,17 +27,20 @@ class ScoreAnaliser {
 
         let basePenalty = 0;
 
-        switch (sev)
+        const severity  = typeof sev == 'string' ? sev.toUpperCase() : sev
+        switch (severity)
         {
             case CodeSeverity.CRITICAL:
             case "ERROR":
             case "HIGH":
+            case 2: 
                 basePenalty = 30;
                 break;
 
             case CodeSeverity.MEDIUM:
             case "WARNING":
             case "MODERATE":
+            case 1:
                 basePenalty = 15;
                 break;
 

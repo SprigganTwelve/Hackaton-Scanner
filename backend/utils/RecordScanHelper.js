@@ -7,8 +7,8 @@ const LineInfo = require('../valueObjects/LineInfo')
 const CodeScannerTool = require('../enums/CodeScannerTool')
 
 //DTO
-const OwaspCategoryMap = require('../services/DTO/OwaspCategoryMap')  //For JS-DOC
-const MappedIssue = require('../services/DTO/MappedIssue')            //FOR JS-Doc
+const OwaspCategoryMap = require('../services/scan/DTO/OwaspCategoryMap')  //For JS-DOC
+const MappedIssue = require('../services/scan/DTO/MappedIssue')            //FOR JS-Doc
 
 //Repositories
 const FindingRepository = require('../repositories/FindingRepository')
@@ -18,7 +18,7 @@ const AnalysisRecordRepository = require('../repositories/AnalysisRecordReposito
 
 
 //Services
-const ScanResult = require("../services/DTO/ScanResult");
+const ScanResult = require("../services/scan/DTO/ScanResult");
 
 
 //Utility
@@ -112,7 +112,6 @@ class RecordScanHelper
      * @param { string }  analysis_tool_name - the category key with error
      * */
     static async _recordMappedIssue(issue, category_key = null, analysis_tool_name, analysisRecordId) {
-        console.log("Issue: ", {issue})
         const {
             check_id,
             file_path,

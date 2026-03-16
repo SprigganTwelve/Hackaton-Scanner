@@ -2,8 +2,8 @@ const path = require('path');
 const { BASIC_UPLOADING_FOLDER_PATH } = require('../config/upload');
 
 //Locla Services
-const CodeScanner = require('../services/CodeScanner');
-const ScanResult = require('../services/DTO/ScanResult')
+const CodeScanner = require('../services/scan/CodeScanner');
+const ScanResult = require('../services/scan/DTO/ScanResult')
 const ZipProcessor = require('../services/ZipProcessor')
 
 
@@ -292,7 +292,6 @@ exports.scanZip = async (req, res) => {
             })
         }
 
-        console.log({ projectId, project, scanTools })
 
         //Processed with the code scanner service
         /** @type {ScanResult} */
