@@ -24,8 +24,8 @@ class DirectoryHelper
      * @returns {{
      * 
      *    safeFilePath: ?string,  
-     *      - A verified file path that exists. 
-    *           It can be the original file path or a matching file found in a subdirectory. 
+     *      A verified file path that exists. 
+     *          It can be the original file path or a matching file found in a subdirectory. 
      *          Returns null if no file is found.
      * 
      *    filePath: string       - The file path passed in parameter

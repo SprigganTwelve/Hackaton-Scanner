@@ -1,3 +1,4 @@
+const SolutionResult = require("./SolutionResult");
 
 /**
  * Define data retreive from owaps
@@ -14,6 +15,7 @@ class MappedIssue
      * @property  {?number} MappedIssueProperty.start_index
      * @property  {?number} MappedIssueProperty.end_index
      * @property  {?string} MappedIssueProperty.errorName - A group name for the erroe
+     * @property  {?SolutionResult} MappedIssueProperty.solution - Represent a possible solution to the issue if directly provided by the first analysis (this field is not mandatory)
      */
 
     /**
@@ -26,10 +28,11 @@ class MappedIssue
         end_index, 
         message, //description
         severity,
-        code,
+        code ,//details informations
         check_id,
         fingerprint,
         errorName = null,
+        solution = null, 
     })
     {
         this.errorName = errorName;
@@ -39,7 +42,8 @@ class MappedIssue
         this.end_index = end_index;
         this.severity = severity;
         this.message = message;
-        this.code = code
+        this.code = code;
+        this.solution = solution;
         this.fingerprint = fingerprint
     }
 }

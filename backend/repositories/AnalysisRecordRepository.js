@@ -37,8 +37,8 @@ class AnalysisRecordRepository
      * @typedef {Object} AnalisisToolData
      * @property {string[]} analysis_record_id - the id of the related analysis
      * @property {string[]} analysisTools - an array containing the name of the tools used 
-     */
-    /**
+     * 
+     * --------------
      * 
      * @param {AnalisisToolData} param0
      * @returns {boolean} - tell if everything when successfully or not
@@ -46,17 +46,22 @@ class AnalysisRecordRepository
     static async addAnalysisTools({analysis_record_id, analysisTools})
     {
         try {
-            for(const toolName of analysisTools)
-            {
-                const tool = await AnalysisToolRepository.getToolByName(toolName)
-                const toolId = tool.id
+            const uniqueTools = [...new Set(analysisTools)];
+
+            for (const toolName of uniqueTools) {
+                const tool = await AnalysisToolRepository.getToolByName(toolName);
+                
+                if (!tool) {
+                    console.warn(`[Warning] Tool ${toolName} not found in database.`);
+                    continue;
+                }
+
+                const toolId = tool.id;
 
                 await pool.query(
-                    `
-                        INSERT INTO analysis_tools(analysis_record_id, tool_id) VALUES(?, ?)
-                    `,
+                    `INSERT IGNORE INTO analysis_tools(analysis_record_id, tool_id) VALUES(?, ?)`,
                     [analysis_record_id, toolId]
-                )
+                );
             }
             return true;
         } 

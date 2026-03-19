@@ -3,14 +3,14 @@ const MappedIssue = require('./MappedIssue')
 
 class ScanResult{
     /**
-     * @typedef {Object} scanData
-     * @property {Object} [semgrepResults]       - the api parse data
-     * @property {Object} [eslintResults]        - the api parse data
-     * @property {Object} [npmAuditResults]        - the api parse data
-     * @property {OwaspCategoryMap} [owasp]      - mapped issue & filtered data (domain data)
-     * @property {MappedIssue[]} [eslint]        - mapped issue & filtered data 
-     * @property {MappedIssue[]} [npmAudit]      - mapped issue & filtered data 
-     * @property {number?} [securityScorePoint]  - score point between 0 - 100 calculated
+     * @typedef  { Object } scanData
+     * @property { Object } [semgrepResults]       - the api parse data
+     * @property { Object } [eslintResults]        - the api parse data
+     * @property { Object } [npmAuditResults]        - the api parse data
+     * @property { OwaspCategoryMap | null } [owasp]      - mapped issue & filtered data (domain data)
+     * @property { MappedIssue[] } [eslint]        - mapped issue & filtered data 
+     * @property { MappedIssue[] } [npmAudit]      - mapped issue & filtered data 
+     * @property { number? } [securityScorePoint]  - score point between 0 - 100 calculated
      */
 
     /**

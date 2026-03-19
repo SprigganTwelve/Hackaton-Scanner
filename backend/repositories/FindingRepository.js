@@ -24,6 +24,7 @@ class FindingRepository
      */
     static async addFinding(finding) {
         const {
+            solution,
             file_path, severity, code, tool_id, rule_id,
             analysis_record_id, fingerprint, owaspVulnerabilityCategories
         } = finding;
@@ -46,12 +47,21 @@ class FindingRepository
                     if (!categoryName)
                         continue;
 
+                    //Ensure the category string slected in the bdd is right
                     const category = await OwaspCategoryRepository.getCategoryByName(categoryName);
                     if (category) {
-                        await pool.query(
+                        //save issue
+                        const [result] = await pool.query(
                             "INSERT IGNORE INTO rule_categories_owasp(rule_id, category_id) VALUES(?, ?)", 
                             [finalRuleId, category.id]
                         );
+                        //Save a solution if it is direcly propose
+                        if(solution){
+                            await pool.query(
+                                'INSERT INTO solution(corrective_measure, finding_id) VALUES(?,?)', 
+                                [solution.corrective_mesure, result.insertId]
+                            );
+                        }
                     }
                 }
             }

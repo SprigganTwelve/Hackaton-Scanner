@@ -121,7 +121,8 @@ class RecordScanHelper
             message: description,
             start_index,
             end_index,
-            fingerprint
+            fingerprint,
+            solution
         } = issue;
 
         const owaspVulnerabilityCategories = category_key ? [category_key] : [];
@@ -137,7 +138,8 @@ class RecordScanHelper
             fingerprint ,
             analysis_record_id: analysisRecordId,
             code: code,
-            owaspVulnerabilityCategories
+            owaspVulnerabilityCategories,
+            solution
         });
 
         const insertedFinding = await FindingRepository.addFinding(finding)

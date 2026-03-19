@@ -1,5 +1,5 @@
-const OWASPVulnerabilityError = require('../enums/OWASPVulnerabilityError')
-const CodeSeverity = require('../enums/CodeSeverity')
+const CodeSeverity = require('../enums/CodeSeverity');
+const SolutionResult = require('../services/scan/DTO/SolutionResult');
 
 class Finding {
     /**
@@ -10,6 +10,7 @@ class Finding {
      * @param {string} params.severity - Original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
      * @param {string} params.code - Code snippet where the finding was detected.
      * @param {string[]} params.owaspVulnerabilityCategories - OWASP vulnerability categories associated with the finding (e.g., "A01_Broken_Access_Control").
+     * @param {SolutionResult} params.solution - Optionnal - but present if a solution has been generated.
      */
     constructor({ 
         file_path,
@@ -18,6 +19,7 @@ class Finding {
         tool_id,
         rule_id,
         fingerprint,
+        solution = null,
         analysis_record_id,
         owaspVulnerabilityCategories= [],
     })
@@ -30,8 +32,9 @@ class Finding {
         this.code = code;
         this.tool_id = tool_id;
         this.rule_id = rule_id;
-        this.analysis_record_id = analysis_record_id
+        this.solution = solution;
         this.fingerprint = fingerprint
+        this.analysis_record_id = analysis_record_id
         this.owaspVulnerabilityCategories = owaspVulnerabilityCategories
     }
 

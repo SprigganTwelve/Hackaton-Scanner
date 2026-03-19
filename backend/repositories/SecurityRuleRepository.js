@@ -2,7 +2,7 @@ const { default: CodeScannerTool } = require('../../frontend/src/enums/CodeScann
 const pool = require('../config/database/mysql.client');
 
 //Utility
-const SemgrepFormatter = require('../utils/Formatter');
+const {SemgrepFormatter} = require('../utils/Formatter');
 
 /**
  * Repository responsible for managing interactions with the 'rule' table.

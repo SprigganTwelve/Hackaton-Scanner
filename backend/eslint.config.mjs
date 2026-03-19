@@ -3,19 +3,24 @@ import js from '@eslint/js'
 
 //Default eslint config for code analysis
 export default [
-  js.configs.recommended,
-  securityPlugin.configs.recommended,
-  {
-    files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
-    languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-      globals:{
-        browser: true,
-        node: true,
-        es2021: true
-      }
-    },
-    rules: {}
-  }
+    {
+        files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
+        languageOptions: {
+            ecmaVersion: "latest",
+            sourceType: "module",
+            // C'est ici que ça se passe :
+            globals: {
+                // For code element like - URLSearchParams, window, document, etc.
+                browser: true, 
+                // For code element like - require, process, __dirname, etc.
+                node: true,    
+                // For code element like - Map, Set, etc.
+                es2021: true   
+            }
+        },
+        rules: {
+            "no-undef": "error",
+            // tes autres règles...
+        }
+    }
 ]
