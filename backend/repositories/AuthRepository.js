@@ -53,8 +53,8 @@ class AuthRepository {
     }) {
         const [result] = await pool.query(
             `INSERT INTO account (id, email, password, name, git_url, git_access_token)
-             VALUES (?,?, ?, ?, ?, ?)`,
-            [ uuidv4(), email, password, name, git_url, CryptoSecurityService.encode(git_access_token) ]
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [ uuidv4(), email, password, name, git_url, git_access_token ? CryptoSecurityService.encrypt(git_access_token): null ]
         );
 
         // result.insertId contient l'ID généré par MySQL

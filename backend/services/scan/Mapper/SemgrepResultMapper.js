@@ -1,12 +1,18 @@
 
+
 //DTO & Value Object
 const MappedIssue = require("../DTO/MappedIssue");
 const OwaspCategoryMap = require("../DTO/OwaspCategoryMap");
 const Finding = require("../../../valueObjects/Finding");
 
 
+//Services
+const CryptoSecurityService = require("../../CryptoSecurityService");
+
+
 //Utility
 const {SemgrepFormatter} = require("../../../utils/Formatter");
+
 
 /**
  * Maps Semgrep analysis results into a strict, immutable,
@@ -50,7 +56,9 @@ class SemgrepResultMapper
                 code: Array.isArray(issue.extra?.lines)
                     ? issue.extra.lines.join('\n')
                     : issue.extra?.lines ?? null,
-                fingerprint: issue.extra?.fingerprint ?? null
+                fingerprint: issue.extra?.fingerprint !== "requires login" 
+                                ?  issue.extra?.fingerprint
+                                : CryptoSecurityService.hash(`SEMGREP|${issue.check_id}|${issue.path}|${issue.start.line}|${issue.extra.message}`)
             });
 
             let matched = false;

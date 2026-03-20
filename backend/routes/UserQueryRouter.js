@@ -3,10 +3,7 @@
 
 // This router is responsible for handling user queries related to adding projects and scanning repositories.
 
-const express = require('express');
-const path = require('path');
-
-const router = express.Router();
+const router = require('express').Router()
 
 const { checkUserAuthorization } = require('../middlewares/checkUserAuthorization');
 const UserQueryController = require('../controllers/UserQueryController');

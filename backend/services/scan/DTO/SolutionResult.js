@@ -2,9 +2,10 @@
 
 class SolutionResult {
     constructor({
-        corrective_mesure
+        corrective_measure
     }){
-        this.corrective_mesure = corrective_mesure
+        /** @type {string} */
+        this.corrective_measure = corrective_measure
     }
 }
 

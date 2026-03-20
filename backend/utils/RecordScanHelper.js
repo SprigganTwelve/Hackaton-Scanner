@@ -47,60 +47,66 @@ class RecordScanHelper
      */
     static async execute(projectId, scanResult)
     {
-        const analysisTools = [];
-        //calculate score
-        const scoreBadge = ScoreAnalizer.analyze(scanResult?.securityScorePoint)
+        try{
+            const analysisTools = [];
+            //calculate score
+            const scoreBadge = ScoreAnalizer.analyze(scanResult?.securityScorePoint)
 
-        //Create analysis record
-        const analysisRecord = await AnalysisRecordRepository.addAnalysisRecord({ 
-            project_id: projectId,
-            score: scoreBadge
-        });
+            //Create analysis record
+            const analysisRecord = await AnalysisRecordRepository.addAnalysisRecord({ 
+                project_id: projectId,
+                score: scoreBadge
+            });
 
-        const owasp = scanResult.owasp ?? {}    //The owasp error top 10 categories
-        const npmAudit = scanResult.npmAudit ?? []
-        const eslint = scanResult.eslint ?? []
+            const owasp = scanResult.owasp ?? {}    //The owasp error top 10 categories
+            const npmAudit = scanResult.npmAudit ?? []
+            const eslint = scanResult.eslint ?? []
 
-        // console.log("---Record Into Bdd Marker (For Debug))---")
+            // console.log("---Record Into Bdd Marker (For Debug))---")
 
-        //Record Semgrep Finding result Into Bdd
-        if(owasp && Object.keys(owasp).length > 0)
-        {
-            /** @type {{ [key: string]: MappedIssue[] }} */
-            for(const [key, value]  of Object.entries(owasp))
+            //Record Semgrep Finding result Into Bdd
+            if(owasp && Object.keys(owasp).length > 0)
             {
-                for(let issue of value){
-                    await this._recordMappedIssue(issue, key, CodeScannerTool.SEMGREP, analysisRecord.id)
+                /** @type {{ [key: string]: MappedIssue[] }} */
+                for(const [key, value]  of Object.entries(owasp))
+                {
+                    for(let issue of value){
+                        await this._recordMappedIssue(issue, key, CodeScannerTool.SEMGREP, analysisRecord.id)
+                    }
                 }
+                analysisTools.push(CodeScannerTool.SEMGREP)
             }
-            analysisTools.push(CodeScannerTool.SEMGREP)
-        }
-        
+            
 
-        //Record ESLint result into bdd
-        if(Array.isArray(scanResult.eslint) && scanResult.eslint.length > 0)
-        {
-            for(let issue of eslint){
-                await this._recordMappedIssue(issue, null, CodeScannerTool.ESLINT, analysisRecord.id)
+            //Record ESLint result into bdd
+            if(Array.isArray(scanResult.eslint) && scanResult.eslint.length > 0)
+            {
+                for(let issue of eslint){
+                    await this._recordMappedIssue(issue, null, CodeScannerTool.ESLINT, analysisRecord.id)
+                    analysisTools.push(CodeScannerTool.ESLINT)
+                }
                 analysisTools.push(CodeScannerTool.ESLINT)
             }
-            analysisTools.push(CodeScannerTool.ESLINT)
-        }
 
 
 
-        //Record Npm Audit record into bdd
-        if(Array.isArray(scanResult.npmAudit) && scanResult.eslint.length > 0)
-        {
-            for(let issue of npmAudit){
-                await this._recordMappedIssue(issue, null, CodeScannerTool.NPM_AUDIT, analysisRecord.id )
+            //Record Npm Audit record into bdd
+            if(Array.isArray(scanResult.npmAudit) && scanResult.eslint.length > 0)
+            {
+                for(let issue of npmAudit){
+                    await this._recordMappedIssue(issue, null, CodeScannerTool.NPM_AUDIT, analysisRecord.id )
+                }
+                analysisTools.push(CodeScannerTool.NPM_AUDIT)
             }
-            analysisTools.push(CodeScannerTool.NPM_AUDIT)
+
+            await AnalysisRecordRepository.addAnalysisTools({ analysis_record_id: analysisRecord.id ,analysisTools})
+
+            return { owasp, analysisRecord, eslint, npmAudit };
         }
-
-        await AnalysisRecordRepository.addAnalysisTools({ analysis_record_id: analysisRecord.id ,analysisTools})
-
-        return { owasp, analysisRecord, eslint, npmAudit };
+        catch(error){
+            console.warn("[RecordScanHelper::execute] Something went wrong, error: ", error);
+            throw error;
+        }
     }
 
 
@@ -122,7 +128,8 @@ class RecordScanHelper
             start_index,
             end_index,
             fingerprint,
-            solution
+            solution,
+            message
         } = issue;
 
         const owaspVulnerabilityCategories = category_key ? [category_key] : [];
@@ -139,11 +146,11 @@ class RecordScanHelper
             analysis_record_id: analysisRecordId,
             code: code,
             owaspVulnerabilityCategories,
-            solution
+            solution,
+            message
         });
 
         const insertedFinding = await FindingRepository.addFinding(finding)
-
         const lineInfo = new LineInfo({start_index, end_index});
         await FindingRepository.addLineInfoToFinding(insertedFinding.id, lineInfo)
     }

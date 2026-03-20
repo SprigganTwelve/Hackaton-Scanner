@@ -44,8 +44,8 @@ class NpmResultMapper
                     : "No direct fix available. Check dependency tree.";
 
                 // Construction of fingerprint
-                const fingerprint = CryptoSecurityService.encode(
-                    `${pkgName}|${severity}|${currentVersion}`
+                const fingerprint = CryptoSecurityService.hash(
+                    `NPM|${pkgName}|${severity}|${currentVersion}`
                 );
 
                 const issue = new MappedIssue({
@@ -62,7 +62,7 @@ class NpmResultMapper
 
                 // Attach solution to last version
                 const solution = new SolutionResult({ 
-                    corrective_mesure: correctiveMeasure 
+                    corrective_measure: correctiveMeasure 
                 });
                 
                 issue.solution = solution; 

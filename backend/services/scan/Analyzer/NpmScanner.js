@@ -55,8 +55,6 @@ class NpmScanner
                         encoding: 'utf8',
                         stdio: ['ignore', 'pipe', 'ignore'] 
                     });
-                    console.log("NPM Ausit result")
-                    console.log(auditOut)
                     return JSON.parse(auditOut || '{}');
                 } 
                 catch (auditError) {

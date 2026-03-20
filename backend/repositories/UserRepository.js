@@ -28,7 +28,7 @@ class UserRepository {
             return null;
         }
 
-        return CryptoSecurityService.decode(rows[0].git_access_token);
+        return CryptoSecurityService.decrypt(rows[0].git_access_token);
     }
 
 

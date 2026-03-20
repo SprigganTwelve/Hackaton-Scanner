@@ -13,7 +13,7 @@ CREATE TABLE account(
    email VARCHAR(250) NOT NULL UNIQUE,
    password VARCHAR(255) NOT NULL,
    git_url VARCHAR(350) DEFAULT NULL,
-   git_access_token VARCHAR(250) DEFAUL NULL
+   git_access_token TEXT DEFAUL NULL
 );
 
 -- =========================
@@ -130,6 +130,7 @@ CREATE TABLE finding(
    is_corrected TINYINT(1) DEFAULT 0,
    severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
    code TEXT NOT NULL,
+   message VARCHAR(250) DEFAULT NULL,
 
    tool_id INT DEFAULT NULL,
    rule_id INT NOT NULL,
@@ -151,6 +152,8 @@ CREATE TABLE IF NOT EXISTS line_info (
     start_index INT NOT NULL,
     end_index INT DEFAULT NULL,
     finding_id INT NOT NULL,
+
+    UNIQUE (finding_id, start_index, end_index),
     FOREIGN KEY(finding_id) REFERENCES finding(id) ON DELETE CASCADE
 );
 

@@ -14,7 +14,13 @@ const cors = require('cors')
 /**
  * Registers built-in Express middleware to parse incoming request bodies.
  */
-app.use(express.json())
+app.use((req, res, next)=>{
+    if(req.path.startsWith('/api/no-json')){
+        return next()
+    }
+   express.json()(req, res, next)
+})
+
 app.use(express.urlencoded({ extended: true }))
 app.use(cors({
     origin: '*'
@@ -26,6 +32,7 @@ app.use(cors({
 app.use('/api/auth', authRouter)
 app.use('/api/users', UserRouter)
 app.use('/api/users', UserQueryRouter);
+
 
 app.get('/api/test', (_req, res)=>{
     console.log("BACKEND API TEST")

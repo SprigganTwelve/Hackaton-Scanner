@@ -9,6 +9,7 @@ class Finding {
      * @param {string} params.file_path - Relative path of the scanned file.
      * @param {string} params.severity - Original severity level of the finding (e.g., "INFO", "WARNING", "ERROR").
      * @param {string} params.code - Code snippet where the finding was detected.
+     * @param {?string} params.message Optionnal - A Message related to the error;
      * @param {string[]} params.owaspVulnerabilityCategories - OWASP vulnerability categories associated with the finding (e.g., "A01_Broken_Access_Control").
      * @param {SolutionResult} params.solution - Optionnal - but present if a solution has been generated.
      */
@@ -19,11 +20,13 @@ class Finding {
         tool_id,
         rule_id,
         fingerprint,
+        message = null,
         solution = null,
         analysis_record_id,
         owaspVulnerabilityCategories= [],
     })
     {
+        this.message = message;
         this.file_path = file_path;
         this.severity = Finding.mapSeverity(
             severity,

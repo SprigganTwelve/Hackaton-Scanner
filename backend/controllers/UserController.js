@@ -16,12 +16,17 @@ const ProjectRepository = require('../repositories/ProjectRepository');
 const CodeScannerTool = require('../enums/CodeScannerTool');
 
 //Helpers/Utility
-const AuthJwtPayload = require('../utils/AuthJwtPayload');
 const GitRepoHelper = require('../utils/GitRepoHelper')
 const RecordScanHelper = require('../utils/RecordScanHelper')
 
-const AuthPlayload = require('../utils/AuthJwtPayload');
+const AuthPlayload = require('../utils/AuthJwtPayload'); //Schema for JWT
 const { ensureBodyProperty } = require('../utils/RequestValidators');
+
+
+
+//---------------
+// HANDLERS
+//--------------------
 
 /**
  * Help an user add a project to his account with git_url
@@ -32,7 +37,6 @@ const { ensureBodyProperty } = require('../utils/RequestValidators');
 exports.addProjectWithURL = async (req, res) => {
     //Data validation
     const { name, repoUrl, token } = req.body;
-    console.log({name, repoUrl, token})
 
     /** @type {AuthPlayload} authPayload */
     const authPayload = req.user;
@@ -48,7 +52,6 @@ exports.addProjectWithURL = async (req, res) => {
 
 
     //Check repository existance
-    console.log({repoUrl, userId: authPayload.sub, token})
     const doesRepoExixt = await GitRepoHelper.repoExists(repoUrl, authPayload.sub, token)
     if(!doesRepoExixt){
         return res.status(400).json({
@@ -169,6 +172,11 @@ exports.addProjectWithZip = async (req, res) => {
 }
 
 
+//------------------------------------
+//  SCAN 
+//------------------------------------
+
+
 
 /**
  * Allow an user to scan a project with the selected scanning tools
@@ -200,7 +208,7 @@ exports.scanRepo = async (req, res) => {
         });
     }
 
-    /** @var {AuthJwtPayload} user */
+    /** @var {AuthPlayload} user */
     const user = req.user;
 
     // -- Project existence validation
@@ -252,7 +260,10 @@ exports.scanRepo = async (req, res) => {
 
 
 
-
+/**
+ * @param {import('express').Request} req
+ * @param { import('express').Response} res
+ */
 exports.scanZip = async (req, res) => {
 
     //Data validation
@@ -325,6 +336,9 @@ exports.scanZip = async (req, res) => {
     }
     catch (error) {
         console.error('Erreur lors du scan du ZIP:', error);
-        return res.status(500).json({ success: false, message: 'Action echoué' });
+        if(!res.headersSent){
+            return res.status(500).json({ success: false, message: 'Action echoué' });
+        }
     }
 };
+

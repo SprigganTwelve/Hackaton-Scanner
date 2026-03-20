@@ -41,7 +41,7 @@ class AnalysisRecordRepository
      * --------------
      * 
      * @param {AnalisisToolData} param0
-     * @returns {boolean} - tell if everything when successfully or not
+     * @returns {Promise<boolean>} - tell if everything when successfully or not
      */
     static async addAnalysisTools({analysis_record_id, analysisTools})
     {

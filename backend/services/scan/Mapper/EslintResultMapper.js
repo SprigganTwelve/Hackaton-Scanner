@@ -26,8 +26,8 @@ class EslintResultMapper
             result.forEach(fileEntry => {
                 fileEntry?.messages?.forEach(msg => {
                     
-                    const fingerprint = CryptoSecurityService.encode(
-                        `${fileEntry.filePath}|${msg.ruleId}|${msg.line}`
+                    const fingerprint = CryptoSecurityService.hash(
+                        `ESLINT|${fileEntry.filePath}|${msg.ruleId}|${msg.line}`
                     );
 
                     const errorName = EslintFormatter.toPrettyName(msg.ruleId ?? "unknown-rule");
