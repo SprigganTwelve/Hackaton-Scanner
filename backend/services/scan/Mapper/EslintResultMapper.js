@@ -4,6 +4,7 @@ const Finding = require("../../../valueObjects/Finding");
 
 const CryptoSecurityService = require("../../CryptoSecurityService");
 const { EslintFormatter } = require("../../../utils/Formatter");
+const SolutionResult = require("../DTO/SolutionResult");
 
 
 /**
@@ -24,7 +25,10 @@ class EslintResultMapper
 
         if (Array.isArray(result)) {
             result.forEach(fileEntry => {
+                const sourceLines = fileEntry.source ? fileEntry.source.split(/\r?\n/) : [];
+
                 fileEntry?.messages?.forEach(msg => {
+
                     
                     const fingerprint = CryptoSecurityService.hash(
                         `ESLINT|${fileEntry.filePath}|${msg.ruleId}|${msg.line}`
@@ -32,6 +36,7 @@ class EslintResultMapper
 
                     const errorName = EslintFormatter.toPrettyName(msg.ruleId ?? "unknown-rule");
 
+                    const lineContent = sourceLines[msg.line-1] || null;
                     const issue = new MappedIssue({
                         check_id: msg.ruleId ?? null,
                         errorName: errorName,
@@ -40,9 +45,13 @@ class EslintResultMapper
                         end_index: msg.endLine || msg.line || null,
                         message: msg.message ?? null,
                         severity: Finding.mapSeverity(msg.severity) ?? null,
-                        code: fileEntry.source ?? null, 
+                        code: lineContent, 
                         fingerprint
                     });
+
+                    issue.solution = new SolutionResult({
+                        corrective_measure: msg.suggestions?.[0]?.desc || "Review the rule documentation for a fix."
+                    })
 
                     eslintResults.push(issue);
                 });

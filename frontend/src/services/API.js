@@ -83,7 +83,7 @@ async function request(path, options = {}) {
 		return data;
 	} 
 	catch (e) {
-		console.error("ADD PROJECT ERROR", e?.status, e?.data || e);
+		console.error("API ERROR", e?.status, e?.data || e);
 		alert(e?.data?.message || "Erreur 400 lors de la création du projet");
 	}
 	finally {

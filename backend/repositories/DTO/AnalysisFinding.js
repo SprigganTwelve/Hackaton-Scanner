@@ -11,11 +11,14 @@ class AnalysisFinding{
         analysisRecordId,
         fingerprint,
         owaspCategory,
-        solution
+        solution,
+        toolName = null,
+        errorName = null
     })
     {
+        this.ruleName = errorName;
+        this.toolName = toolName;
         this.findingId = findingId;
-        this.scorePenalty = scorePenalty;
         this.filePath = filePath;
         this.severity = severity;
         this.code = code;

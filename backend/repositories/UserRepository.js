@@ -223,17 +223,29 @@ class UserRepository {
                 f.severity,
                 f.code,
                 f.tool_id,
-                f.rule_id,
+
+                r.check_id as rule_id,
+                r.name AS rule_name,
+                t.name AS tool_name,
+
                 f.analysis_record_id,
                 f.fingerprint,
+
                 -- On garde le nom cohérent avec le JS
                 GROUP_CONCAT(DISTINCT o.name SEPARATOR ', ') AS owaspCategory,
                 s.corrective_measure AS solution
+
             FROM finding f
+
             JOIN rule r ON f.rule_id = r.id
+
             LEFT JOIN rule_categories_owasp rco ON r.id = rco.rule_id
+
             LEFT JOIN owasp_category o ON rco.category_id = o.id
-            LEFT JOIN solution s ON f.id = s.finding_id
+            LEFT JOIN tools t ON t.id = f.tool_id
+
+            LEFT JOIN solution s ON f.id = s.finding_id 
+
             WHERE f.analysis_record_id = ?
             GROUP BY f.id, s.id;`,
             [analysisId]
@@ -249,13 +261,20 @@ class UserRepository {
                 findingId: finding.id,
                 filePath: finding.file_path,
                 isCorrected: !!finding.is_corrected, // Conversion tinyint -> boolean
+
+                ruleName: finding.rule_name,
                 severity: finding.severity,
                 code: finding.code,
+                
+                toolName: finding.tool_name ?? null,
                 toolId: finding.tool_id,
                 ruleId: finding.rule_id,
+
+                toolName: finding.tool_name ?? null,
                 analysisRecordId: finding.analysis_record_id,
                 fingerprint: finding.fingerprint,
-                owaspCategory: categories, // Maintenant c'est un tableau propre
+
+                owaspCategory: categories, // Array de catégories OWASP
                 solution: finding.solution
             });
         });

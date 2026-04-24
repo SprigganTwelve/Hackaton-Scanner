@@ -1,4 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+
 import AddProjectPage from "./pages/NewScan/NewScanPage";
 import FindingsPage from "./pages/Findings/Findings";
 import ScanDashboard from "./pages/scan/ScanDashboard";

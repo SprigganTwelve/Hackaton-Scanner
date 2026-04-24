@@ -20,6 +20,7 @@ import {
   Pie,
   Tooltip,
 } from "recharts";
+import { useCallback } from "react";
 
 function Card({ title, children, className = "" }) {
   return (
@@ -195,28 +196,13 @@ function IntegrationGitCard() {
   *     npmAudit: any             // NPM audit result, can be null
   *   }
   * } props.scanResult
- * @param {AnalysisFinding[]} props.findings - Array of findings to display in the table.
- * @returns {JSX.Element} The rendered findings table.
+ * @param { AnalysisFinding[] | null } props.findings - Array of findings to display in the table.
+ * @returns { JSX.Element } The rendered findings table.
  */
 function FindingsTable({ findings, scanResult }) {
-  const [q, setQ] = useState("");
-  const [sev, setSev] = useState("all");
-  const [lang, setLang] = useState("all");
-
-  // Filter findings based on search, severity, and language
-  const filteredAnalysisFinding = useMemo(() => {
-    return (findings || [])
-      .filter((f) => {
-        // Concatenate searchable text from relevant fields
-        const txt = `${f.title ?? f.ruleId ?? ""} ${f.solution ?? ""} ${f.filePath ?? ""} ${f.toolId ?? ""} ${f.owaspCategory ?? ""}`.toLowerCase();
-        return txt.includes(q.trim().toLowerCase());
-      })
-      .filter((f) => (sev === "all" ? true : (f.severity || "").toLowerCase() === sev))
-      // Placeholder for future language filter
-      .filter(() => (lang === "all" ? true : true));
-  }, [findings, q, sev, lang]);
   
-  const filteredSecurityScanResult = scanResult ?? {}
+  const filteredSecurityScanResult = findings ?? scanResult ?? {}
+  console.log({ findings , scanResult })
 
   return (
     <Card title="Diagnostics" className="ds-panel ds-tablePanel">
@@ -232,99 +218,34 @@ function FindingsTable({ findings, scanResult }) {
         </div>
 
         {
-        filteredSecurityScanResult.owasp &&
-          Object.entries(filteredSecurityScanResult.owasp).map(([key, value])=>
-            (
-              <div key={f.findingId || `${f.filePath}:${f.fingerprint}:${f.ruleId}`} className="ds-row">
-                <div><SeverityPill sev={f.severity} /></div>
-                <div className="ds-diag">
-                  <div className="ds-diag__title">{f.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
-                  {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
-                </div>
-                <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
-                <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
-                <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
-                <div className="ds-actions">
-                  <button className="ds-miniBtn" type="button">Détails</button>
-                  <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
-                </div>
-              </div>
-            )
-          ) 
-        }
-
-
-        {
-         filteredSecurityScanResult.npmAudit &&  
-            Object.entries(filteredSecurityScanResult.npmAudit).map(([key, value])=>
-              (
-                <div key={f.findingId || `${f.filePath}:${f.fingerprint}:${f.ruleId}`} className="ds-row">
-                  <div><SeverityPill sev={f.severity} /></div>
-                  <div className="ds-diag">
-                    <div className="ds-diag__title">{f.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
-                    {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
+          Array.isArray(findings)  ? 
+              findings.length === 0 ? (
+                <div className="ds-empty">Aucun résultat</div>
+              ) : (
+                findings.map((value) => (
+                  <div key={ value.findingId || `${value.filePath}:${value.fingerprint}:${value.ruleId}`} className="ds-row">
+                    <div><SeverityPill sev={value.severity} /></div>
+                    <div className="ds-diag">
+                      <div className="ds-diag__title">{value.ruleName ?? value.ruleId ?? "Finding"}</div>
+                      <div className="ds-diag__desc">{value.solution ?? ""}</div>
+                    </div>
+                    <div className="ds-file">{value.filePath}{value.line ? `:${f.line}` : ""}</div>
+                    <div className="ds-tool">{value.toolName ?? "—"}</div>
+                    <div className="ds-owasp">{value.owaspCategory.join(" - ") ?? "—"}</div>
+                    <div className="ds-actions">
+                      <button className="ds-miniBtn" type="button">Détails</button>
+                      <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
+                    </div>
                   </div>
-                  <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
-                  <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
-                  <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
-                  <div className="ds-actions">
-                    <button className="ds-miniBtn" type="button">Détails</button>
-                    <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
-                  </div>
-                </div>
+                ))
               )
-            ) 
+            : <></>
         }
-
-        {
-          filteredSecurityScanResult.eslint && 
-            Object.entries(filteredSecurityScanResult.eslint).map(([key, value], index)=>
-              (
-                <div key={index} className="ds-row">
-                  <div><SeverityPill sev={f.severity} /></div>
-                  <div className="ds-diag">
-                    <div className="ds-diag__title">{value.title ?? value?.title ?? value?.ruleId ?? "Finding"}</div>
-                    {/* <div className="ds-diag__desc">{f.solution ?? ""}</div> */}
-                  </div>
-                  <div className="ds-file">{ value?.file_path }{value?.start_index ? `:${f.start_index}` : ""}</div>
-                  <div className="ds-tool">{ 'Semgrep' ?? "—"}</div>
-                  <div className="ds-owasp">{ key.replace('_', ' ') ?? "—"}</div>
-                  <div className="ds-actions">
-                    <button className="ds-miniBtn" type="button">Détails</button>
-                    <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
-                  </div>
-                </div>
-              )
-          ) 
-        }
-
-        {filteredAnalysisFinding.length === 0 ? (
-          <div className="ds-empty">Aucun résultat</div>
-        ) : (
-          filteredAnalysisFinding.map((value) => (
-            <div key={f.findingId || `${value.filePath}:${value.fingerprint}:${value.ruleId}`} className="ds-row">
-              <div><SeverityPill sev={value.severity} /></div>
-              <div className="ds-diag">
-                <div className="ds-diag__title">{value.title ?? value.ruleId ?? "Finding"}</div>
-                <div className="ds-diag__desc">{value.solution ?? ""}</div>
-              </div>
-              <div className="ds-file">{value.filePath}{value.line ? `:${f.line}` : ""}</div>
-              <div className="ds-tool">{value.toolId ?? "—"}</div>
-              <div className="ds-owasp">{value.owaspCategory ?? "—"}</div>
-              <div className="ds-actions">
-                <button className="ds-miniBtn" type="button">Détails</button>
-                <button className="ds-miniBtn ds-miniBtn--primary" type="button">Correctif</button>
-              </div>
-            </div>
-          ))
-        )}
-
 
       </div>
     </Card>
   );
 }
-
 
 
 
@@ -334,10 +255,12 @@ export default function ScanDashboard() {
 
   const { projects = [], selectedProjectId } = useUserContext();
   
-  const [currentProject, setCurrentProject] = useState(null);
   const [kpi, setKpi] = useState(null);
   const [scanResult, setScanResult] = useState(null);
-  const [findings, setFindings] = useState([]);
+  const [currentProject, setCurrentProject] = useState(null);
+
+  /** @type {[AnalysisFinding[] | null]} */
+  const [findings, setFindings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [scanning, setScanning] = useState(false);
@@ -352,6 +275,8 @@ export default function ScanDashboard() {
     setCurrentProject(foundProject);
   }, [projects, searchParams, selectedProjectId]);
 
+
+
   // --- Fetch KPIs et findings ---
   useEffect(() => {
     if (!currentProject?.projectId) 
@@ -359,27 +284,9 @@ export default function ScanDashboard() {
 
     setLoading(true);
     setErr(null);
-
+    
     const latestAnalysis = getLatestAnalysisRecords([currentProject])[0]?.latestAnalysis;
-
-    console.log('-------Fetch Query Dashboard Data----')
-
-    const fetchData = async ()=>{
-      await Promise.all([
-        getLastScanSummary(currentProject.projectId),
-        listFindings(latestAnalysis?.id)
-      ])
-        .then(([kpiData, findingsData]) => {
-          setKpi(kpiData);
-          console.log({kpiData, findingsData})
-          setFindings(Array.isArray(findingsData) ? findingsData : []);
-          console.log('-----END FETCHING------')
-        })
-        .catch(e => setErr(e))
-        .finally(() => setLoading(false));
-    }
-
-    fetchData()
+    loadData(latestAnalysis?.id)
   }, [currentProject]);
 
   // --- Scan ---
@@ -395,6 +302,7 @@ export default function ScanDashboard() {
           repoUrl: currentProject.url,
           isZip: currentProject.isUploaded
         });
+        console.log("SCAN RESULT")
         setScanResult(results);
       }
       catch (e) {
@@ -404,10 +312,34 @@ export default function ScanDashboard() {
         setScanning(false);
       }
       console.log("-------SCAN ENDED ....")
-
+      loadData()
     }
     makeScan();
   }, [scanning, currentProject]);
+
+    useEffect(()=>{
+    console.log("----USEEFFECT FINDINGS UPDATED-------------", findings)
+  }, [findings])
+  //-- Callabcks
+
+  const loadData = useCallback(async(analysisId)=>{
+      await Promise.all([
+        getLastScanSummary(analysisId),
+        listFindings(analysisId)
+      ])
+        .then(([kpiData, findingsData]) => {
+          setKpi(kpiData);
+          setFindings(
+            findingsData?.success && Array.isArray(findingsData.data) ? 
+              findingsData?.data 
+              : null
+          );
+          console.log("---LOADING DATA------", findingsData)
+        })
+        .catch(e => setErr(e))
+        .finally(() => setLoading(false));
+  },[currentProject, setKpi, setFindings, setLoading])
+
 
   // --- Loading / Errors ---
   if (loading) return <div className="ds-loading">Chargement…</div>;
@@ -443,7 +375,10 @@ export default function ScanDashboard() {
         <IntegrationGitCard />
       </div>
 
-      <FindingsTable findings={findings} scanResult={scanResult} />
+      <FindingsTable 
+        findings={findings}
+        scanResult={scanResult}
+      />
     </div>
   );
 }

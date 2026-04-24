@@ -6,16 +6,15 @@ import UserProject from '../services/DTO/UserProject'
 /**
  * Return the latest analysis record for each project
  * @param {Array<{
- *  projectId: string|number,
- *  analysisRecords?: Array<any>
+ *    projectId: string|number,
+ *    analysisRecords?: Array<any>
  * }>} projects
  * @returns {Array<{
- *  projectId: string|number,
- *  latestAnalysis: any | undefined
+ *    projectId: string|number,
+ *    latestAnalysis: any | undefined
  * }>}
  */
 export function getLatestAnalysisRecords(projects) {
-
   
   if (!Array.isArray(projects)) return [];
   

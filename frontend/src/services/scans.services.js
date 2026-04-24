@@ -14,12 +14,15 @@ export function createScan(payload) {
 }
 
 /**
- * @param scanId - analysis id
+ * @param analysisId - analysis id
  */
-export async function getLastScanSummary(scanId) {
+export async function getLastScanSummary(analysisId) {
   try{
-    // if (useMocks) return mock.getScanSummary(scanId); // /:analysisId/stats/kpi
-    const response = await api.get(`/api/users/${scanId}/stats/kpi`);
+    // console.log("---FETCHING FINDINGS----")
+    // console?.log({analysisId})
+    const response = await api.get(`/api/users/${analysisId}/stats/kpi`);
+    // console.log(response)
+    // console.log("---FETCHING KPI ENDED----")
     /**
      * @type {{
      *  score: string,
@@ -28,12 +31,13 @@ export async function getLastScanSummary(scanId) {
      *  quantityRecommandedSolution: number
      * }}
      */
+
     const {
       score,
       quantityError,
       quantityVulnerableDependences,
       quantityRecommandedSolution
-    } = response;
+    } = response.data;
 
     return {
             score,
@@ -56,10 +60,13 @@ export async function getLastScanSummary(scanId) {
  */
 export async function listFindings(analysis_id)
 {
-  // if (useMocks) return mock.listFindings(scanId);
   try{
-    // if (useMocks) return mock.getScanSummary(scanId); // /analysis/:analysisId/findings
+    // console.log("---FETCHING FINDINGS----")
+    // console?.log({analysis_id})
     const response = await api.get(`/api/users/analysis/${analysis_id}/findings`);
+    console.log(response)
+    console.log("---FETCHING FINDINGS ENDED----")
+
     /**
      * @type {{
      *  success?: boolean,

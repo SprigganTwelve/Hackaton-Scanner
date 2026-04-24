@@ -21,6 +21,7 @@ const RecordScanHelper = require('../utils/RecordScanHelper')
 
 const AuthPlayload = require('../utils/AuthJwtPayload'); //Schema for JWT
 const { ensureBodyProperty } = require('../utils/RequestValidators');
+const DomainError = require('../core/errors/DomainError');
 
 
 
@@ -242,6 +243,15 @@ exports.scanRepo = async (req, res) => {
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 await rollback()
+                
+                if(error instanceof DomainError){
+                    return res.status(200).json({
+                        success: true,
+                        message: error.message,
+                        data: {}
+                    })
+                }
+
                 return res.json({
                     success: false,
                     message: 'Scan échoué'
@@ -324,6 +334,15 @@ exports.scanZip = async (req, res) => {
             {
                 console.log("Something went wrong!!, error: ", error?.message)
                 rollback()
+
+                if(error instanceof DomainError){
+                    return res.status(200).json({
+                        success: true,
+                        message: error.message,
+                        data: {}
+                    })
+                }
+
                 return res.json({
                     success: false,
                     message: 'Scan échoué',

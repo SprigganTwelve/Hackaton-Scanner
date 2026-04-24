@@ -1,5 +1,4 @@
 
-
 class AnalysisFinding{
     constructor ({ 
         findingId,
@@ -10,12 +9,16 @@ class AnalysisFinding{
         ruleId,
         analysisRecordId,
         fingerprint,
+        /** @type {string[]} */
         owaspCategory,
-        solution
+        solution,
+        toolName = null,
+        errorName = null
     })
     {
+        this.ruleName = errorName;
+        this.toolName = toolName;
         this.findingId = findingId;
-        this.scorePenalty = scorePenalty;
         this.filePath = filePath;
         this.severity = severity;
         this.code = code;

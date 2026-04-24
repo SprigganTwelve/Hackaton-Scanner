@@ -3,3 +3,5 @@
  * or illogical errors that may occur within the application.
  */
 class DomainError extends Error {}
+
+module.exports = DomainError;

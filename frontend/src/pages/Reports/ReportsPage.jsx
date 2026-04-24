@@ -76,15 +76,19 @@ export default function ReportsPage() {
   }, []);
 
   const monthOptions = useMemo(() => {
-    const keys = Array.from(new Set((reports??[]).map((r) => monthKey(r.date))));
-    keys.sort((a, b) => (a < b ? 1 : -1)); // desc
-    return keys;
+    if(Array.isArray(reports)){
+      const keys = Array.from( new Set( reports.map((r) => monthKey(r.date)) ) );
+      keys.sort((a, b) => (a < b ? 1 : -1)); // desc
+      return keys;
+    }
   }, [reports]);
 
   const filtered = useMemo(() => {
-    return reports
-      .filter((r) => monthKey(r.date) === month)
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
+    if(Array.isArray(reports)){
+      return reports
+        .filter((r) => monthKey(r.date) === month)
+        .sort((a, b) => (a.date < b.date ? 1 : -1));
+    }
   }, [reports, month]);
 
   async function onDownloadPdf(item) {

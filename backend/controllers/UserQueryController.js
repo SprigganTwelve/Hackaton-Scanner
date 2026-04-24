@@ -77,7 +77,7 @@ exports.getAnalysisFindings = async (req, res) => {
         /** @var {AuthPlayload} authPayload */
         const authPayload = req.user;
         const { analysisId } = req.params;
-        const findings = await UserRepository.getAnalysisFindings(authPayload.sub, analysisId);
+        const findings = await UserRepository.getAnalysisFindings(analysisId);
 
         return res.status(200).json({
             success: true,
@@ -94,6 +94,7 @@ exports.getAnalysisFindings = async (req, res) => {
         });
     }
 }
+
 
 exports.getAnalysisReports = async (req, res) => {
     try{
@@ -129,15 +130,15 @@ exports.getKPIStats = async(req, res)=>{
             quantityRecommandedSolution
         } = await AnalysisRecordRepository.getKPI(analysisId)
 
-        return res.json({success: true, data: {
+        return res.json({ success: true, data: {
             score,
             quantityError,
             quantityVulnerableDependences,
             quantityRecommandedSolution
-        } })
+        }})
     }
     catch (error) {
-                console.log("Something went wrong !! ", error)
+        console.log("Something went wrong !! ", error)
         return res.status(500).json({
             success: false,
             message: 'Une erreur est survenue lors de la récupération des KPI de l\'analyse de l\'utilisateur'

@@ -1,26 +1,29 @@
-import securityPlugin from 'eslint-plugin-security'
-import js from '@eslint/js'
+import securityPlugin from 'eslint-plugin-security';
+import js from '@eslint/js';
+import globals from 'globals';
 
-//Default eslint config for code analysis
+
 export default [
+    js.configs.recommended,
     {
         files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
         languageOptions: {
             ecmaVersion: "latest",
             sourceType: "module",
-            // C'est ici que ça se passe :
             globals: {
-                // For code element like - URLSearchParams, window, document, etc.
-                browser: true, 
-                // For code element like - require, process, __dirname, etc.
-                node: true,    
-                // For code element like - Map, Set, etc.
-                es2021: true   
+                ...globals.browser, // Définit window, document, etc.
+                ...globals.node     // Définit process, require, etc.
             }
         },
+        plugins: {
+            security: securityPlugin
+        },
         rules: {
+            ...securityPlugin.configs.recommended.rules,
+            "no-unused-vars": "warn",
             "no-undef": "error",
-            // tes autres règles...
+            "no-eval": "error",
+            "no-implied-eval": "error"
         }
     }
-]
+];

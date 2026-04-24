@@ -75,9 +75,14 @@ class AnalysisRecordRepository
     /**
      * Get KPI stats for a specific analysis
      * @param {number} analysisId - The ID of the analysis record
-     * @returns {Promise<{score: string, quantityError: number, quantityVulnerableDependences: number, quantityRecommandedSolution: number}>}
+     * @returns {Promise<{
+     *      score: string,
+     *      quantityError: number,
+     *      quantityVulnerableDependences: number,
+     *      quantityRecommandedSolution: number
+     * }>}
      */
-    static async getKPI(analysisId) {
+    static async getKPI(analysisRecordId) {
         const [rows] = await pool.query(`
             SELECT 
                 ar.score,
@@ -98,7 +103,7 @@ class AnalysisRecordRepository
 
             FROM analysis_record ar
             WHERE ar.id = ?
-        `, [analysisId]);
+        `, [analysisRecordId]);
 
         // Si l'analyse n'existe pas encore ou n'a pas de données
         if (!rows.length) {

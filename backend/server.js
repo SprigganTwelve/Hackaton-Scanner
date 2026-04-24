@@ -13,6 +13,7 @@ const cors = require('cors')
 
 /**
  * Registers built-in Express middleware to parse incoming request bodies.
+ * (Streaming (preparing for streaming scan functionnality))
  */
 app.use((req, res, next)=>{
     if(req.path.startsWith('/api/no-json')){
